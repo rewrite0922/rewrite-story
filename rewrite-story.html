@@ -659,8 +659,9 @@
 
     // ============ BOOK CARD ============
     function createBookCard(s, delay = 0) {
-      const isFav = favorites.has(s.id);
+      const isFav = favorites.has(String(s.id));
       const progress = readingProgress[s.id] || 0;
+      const isBuiltIn = typeof s.id === 'number';
       const getTitle = () => currentLang === 'en' ? s.titleEn : (currentLang === 'zh-CN' ? s.titleCn : s.title);
       return `
         <div class="book-card fade-up rounded-3xl overflow-hidden cursor-pointer relative group" style="animation-delay:${delay}ms" onclick="openStory('${s.id}')">
@@ -669,6 +670,7 @@
               <span class="text-4xl mb-2">${s.emoji}</span>
               <h3 class="font-bold text-base leading-tight text-white drop-shadow-lg">${getTitle()}</h3>
               <span class="text-xs mt-1 px-2 py-0.5 rounded-full bg-white/20 text-white/80">${s.cat==='love'?'💕':s.cat==='history'?'📜':'🔮'}</span>
+              ${isBuiltIn ? `<span class="text-xs mt-1.5 px-2 py-0.5 rounded-full bg-starry-glow/30 text-starry-glow font-medium">✦ 示範故事</span>` : ''}
             </div>
             <div class="watermark">Rewrite Story</div>
             <button onclick="event.stopPropagation();toggleFav('${s.id}')" class="absolute top-3 right-3 w-8 h-8 rounded-full ${isFav?'bg-morandi-pink text-starry-deep':'bg-black/30 text-white/70'} flex items-center justify-center transition hover:scale-110">
@@ -758,7 +760,7 @@
             <div class="absolute inset-0 flex items-center justify-center"><span class="text-7xl">${s.emoji}</span></div>
             <div class="watermark" style="font-size:14px">Rewrite Story</div>
           </div>
-          <h1 class="text-3xl font-bold mb-2" style="font-family:'Quicksand',sans-serif">${getTitle()}</h1>
+          <h1 class="text-3xl font-bold mb-2" style="font-family:'Quicksand',sans-serif">${getTitle()} ${typeof s.id === 'number' ? '<span class="text-base font-normal text-starry-glow bg-starry-glow/20 px-2 py-0.5 rounded-full align-middle" style="font-size:0.7em">✦ 示範故事</span>' : ''}</h1>
           <div class="flex items-center gap-4 text-sm text-white/50 mb-4">
             <span>👁️ ${s.views.toLocaleString()} ${t('views')}</span>
             <span>✅ ${s.completions} ${t('completions')}</span>
