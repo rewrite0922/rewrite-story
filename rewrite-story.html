@@ -1,0 +1,1340 @@
+<!doctype html>
+<html lang="zh-TW" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rewrite Story</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCaSojpHxA4j0dtVPC32SIF72Vv1S7JGwc",
+      authDomain: "rewrite-story-874bc.firebaseapp.com",
+      projectId: "rewrite-story-874bc",
+      storageBucket: "rewrite-story-874bc.firebasestorage.app",
+      messagingSenderId: "807434420031",
+      appId: "1:807434420031:web:2f2f3b25aeb300d683dd8a"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            morandi: { pink: '#e8c4c4', rose: '#d4a5a5', blush: '#f2d7d5' },
+            cream: { light: '#fef9ef', warm: '#f5e6ca', gold: '#f0d9a0' },
+            starry: { deep: '#2c3e6b', mid: '#4a6fa5', light: '#7ba7cc', glow: '#a8d8ea' },
+            dreamy: { lavender: '#c5b3d9', mint: '#b8e0d2' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; font-family: 'Noto Sans TC', 'Quicksand', sans-serif; }
+    .app-shell { height: 100%; width: 100%; overflow-y: auto; overflow-x: hidden; }
+
+    .starfield { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+    .star { position: absolute; background: #fff; border-radius: 50%; animation: twinkle var(--dur) ease-in-out infinite alternate; }
+    @keyframes twinkle { 0% { opacity: 0.2; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.2); } }
+
+    .book-card { transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease; }
+    .book-card:hover { transform: rotate(-2deg) translateY(-12px) scale(1.04); box-shadow: 0 20px 40px rgba(44,62,107,0.18); }
+
+    .crown-bounce { animation: crownBob 2s ease-in-out infinite; }
+    @keyframes crownBob { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(3deg); } }
+
+    .fade-up { opacity: 0; transform: translateY(24px); animation: fadeUp 0.6s ease forwards; }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+    .medal-shimmer { position: relative; overflow: hidden; }
+    .medal-shimmer::after { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%); animation: shimmer 3s ease-in-out infinite; }
+    @keyframes shimmer { 0% { transform: translateX(-100%) rotate(45deg); } 100% { transform: translateX(100%) rotate(45deg); } }
+
+    .watermark { position: absolute; bottom: 8px; right: 8px; font-family: 'Quicksand', sans-serif; font-weight: 700; font-size: 10px; color: rgba(255,255,255,0.55); letter-spacing: 1px; text-shadow: 0 1px 3px rgba(0,0,0,0.2); pointer-events: none; }
+
+    .search-box { transition: width 0.3s ease, background 0.3s ease; width: 160px; }
+    .search-box:focus { width: 220px; }
+
+    .cat-pill { transition: all 0.2s ease; cursor: pointer; }
+    .cat-pill:hover { transform: scale(1.08); }
+
+    .moon-glow { filter: drop-shadow(0 0 20px rgba(240,217,160,0.6)); animation: moonFloat 6s ease-in-out infinite; }
+    @keyframes moonFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .progress-fill { transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+    .app-shell::-webkit-scrollbar { width: 6px; }
+    .app-shell::-webkit-scrollbar-track { background: transparent; }
+    .app-shell::-webkit-scrollbar-thumb { background: #d4a5a5; border-radius: 3px; }
+
+    .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast-msg { padding: 12px 20px; border-radius: 16px; color: #fff; font-size: 14px; font-weight: 500; animation: toastIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+
+    .connection-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
+    .connection-indicator.connected { background: #10b981; }
+    .connection-indicator.disconnected { background: #6b7280; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    .firefly { position: fixed; pointer-events: none; z-index: 999; width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle, #fbbf24 0%, #f59e0b 100%); box-shadow: 0 0 12px #fbbf24, 0 0 6px #f59e0b; animation: fireflyFlash 1s ease-in-out forwards; }
+    @keyframes fireflyFlash { 0% { opacity: 1; transform: scale(1.2); } 50% { opacity: 0.8; } 100% { opacity: 0; transform: scale(0.5); } }
+
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; animation: fadeIn 0.3s ease forwards; }
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    .sync-highlight { animation: syncPulse 0.6s ease-in-out; }
+    @keyframes syncPulse { 0% { background: rgba(240,217,160,0.4); } 100% { background: transparent; } }
+
+    .story-text { font-size: 1.1em; line-height: 1.8; }
+
+    .scroll-sync-indicator { position: fixed; top: 50%; right: 20px; width: 3px; height: 60px; background: rgba(168,216,234,0.3); border-radius: 2px; z-index: 100; animation: indicatorPulse 0.6s ease-in-out; }
+    @keyframes indicatorPulse { 0% { background: rgba(168,216,234,0.8); } 100% { background: rgba(168,216,234,0.2); } }
+
+    /* ===== ADMIN PASSWORD MODAL ===== */
+    #adminModal {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(10,15,30,0.75); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+    }
+    #adminModal.open { opacity: 1; pointer-events: all; }
+    #adminModalBox {
+      background: linear-gradient(145deg, #1e2d52, #2c3e6b);
+      border: 1px solid rgba(168,216,234,0.2);
+      border-radius: 28px; padding: 36px 32px; width: 100%; max-width: 380px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+      transform: translateY(20px) scale(0.96); transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    #adminModal.open #adminModalBox { transform: translateY(0) scale(1); }
+    .pw-input-wrap { position: relative; }
+    .pw-input-wrap input { padding-right: 44px; }
+    .pw-toggle { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.4); padding: 0; display: flex; align-items: center; }
+    .pw-toggle:hover { color: rgba(255,255,255,0.8); }
+    .shake { animation: shake 0.4s ease; }
+    @keyframes shake { 0%,100% { transform: translateX(0); } 20%,60% { transform: translateX(-8px); } 40%,80% { transform: translateX(8px); } }
+
+    /* ===== ANNOUNCEMENT BANNER ===== */
+    #announcementBanner {
+      position: relative; z-index: 49; overflow: hidden;
+      animation: bannerSlideDown 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes bannerSlideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .banner-urgent { background: linear-gradient(90deg, #7f1d1d, #991b1b, #b91c1c); border-bottom: 1px solid rgba(239,68,68,0.4); }
+    .banner-normal { background: linear-gradient(90deg, #1e3a5f, #1e3a5f, #2c4f7c); border-bottom: 1px solid rgba(168,216,234,0.3); }
+    .banner-marquee { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+    .banner-icon-pulse { animation: iconPulse 1.5s ease-in-out infinite; }
+    @keyframes iconPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+
+    /* ===== NOTIFICATION BELL POPUP ===== */
+    #notifPanel {
+      position: fixed; bottom: 24px; right: 24px; z-index: 200;
+      width: 340px; max-height: 480px;
+      background: rgba(28,40,70,0.97); border: 1px solid rgba(168,216,234,0.2);
+      border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      display: none; flex-direction: column; overflow: hidden;
+      animation: notifPanelIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    #notifPanel.open { display: flex; }
+    @keyframes notifPanelIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+    .notif-item { transition: background 0.2s ease; }
+    .notif-item:hover { background: rgba(255,255,255,0.05); }
+    .notif-item.unread { border-left: 3px solid #a8d8ea; }
+    .notif-item.urgent-unread { border-left: 3px solid #ef4444; }
+
+    /* Bell badge */
+    .bell-badge { position: absolute; top: -2px; right: -2px; min-width: 18px; height: 18px; background: #ef4444; border-radius: 9px; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 4px; border: 2px solid #2c3e6b; animation: badgePop 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes badgePop { from { transform: scale(0); } to { transform: scale(1); } }
+    .bell-ring { animation: bellRing 0.6s ease-in-out; }
+    @keyframes bellRing { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-15deg); } 40% { transform: rotate(15deg); } 60% { transform: rotate(-10deg); } 80% { transform: rotate(10deg); } }
+  </style>
+</head>
+<body class="h-full">
+  <div class="app-shell bg-gradient-to-b from-starry-deep via-[#1e2d52] to-[#162040] text-white relative" id="appShell">
+
+    <!-- Stars -->
+    <div class="starfield" id="starfield"></div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ===== ANNOUNCEMENT BANNER ===== -->
+    <div id="announcementBanner" class="hidden"></div>
+
+    <!-- ===== ADMIN PASSWORD MODAL ===== -->
+    <div id="adminModal">
+      <div id="adminModalBox">
+        <!-- Icon -->
+        <div class="flex justify-center mb-5">
+          <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-starry-mid to-starry-deep flex items-center justify-center shadow-lg border border-white/10">
+            <i data-lucide="shield" class="w-8 h-8 text-cream-gold"></i>
+          </div>
+        </div>
+        <!-- Title -->
+        <h3 class="text-center text-xl font-bold text-white mb-1" style="font-family:'Quicksand',sans-serif;">管理員驗證</h3>
+        <p class="text-center text-sm text-white/40 mb-6">請輸入密碼以進入後台</p>
+        <!-- Input -->
+        <div class="pw-input-wrap mb-3">
+          <input type="password" id="adminPwInput"
+            placeholder="輸入管理員密碼..."
+            class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 text-sm"
+            onkeydown="if(event.key==='Enter') confirmAdminPw()">
+          <button class="pw-toggle" onclick="togglePwVisibility()" id="pwToggleBtn" title="顯示/隱藏密碼">
+            <i data-lucide="eye" class="w-4 h-4" id="pwEyeIcon"></i>
+          </button>
+        </div>
+        <!-- Error msg -->
+        <p id="adminPwError" class="text-red-400 text-xs text-center mb-4 hidden">❌ 密碼錯誤，請再試一次</p>
+        <!-- Hint -->
+        <p class="text-white/25 text-xs text-center mb-5">預設密碼：<span class="text-white/40 font-mono">admin123</span>　（可在程式碼中修改）</p>
+        <!-- Buttons -->
+        <div class="flex gap-3">
+          <button onclick="closeAdminModal()" class="flex-1 py-3 rounded-2xl bg-white/10 text-white/60 font-medium text-sm hover:bg-white/15 transition">取消</button>
+          <button onclick="confirmAdminPw()" class="flex-1 py-3 rounded-2xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold text-sm hover:opacity-90 transition">
+            進入後台 🛡️
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== NOTIFICATION BELL PANEL ===== -->
+    <div id="notifPanel">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-white/10">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🔔</span>
+          <h3 class="font-bold text-cream-gold" style="font-family:'Quicksand',sans-serif;">站內通知</h3>
+          <span id="notifUnreadCount" class="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full font-bold hidden">0</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="markAllRead()" class="text-xs text-white/40 hover:text-white/70 transition px-2 py-1 rounded-lg hover:bg-white/5">全部已讀</button>
+          <button onclick="closeNotifPanel()" class="w-7 h-7 rounded-full hover:bg-white/10 flex items-center justify-center transition text-white/50 hover:text-white">✕</button>
+        </div>
+      </div>
+      <div id="notifList" class="overflow-y-auto flex-1" style="max-height:380px;"></div>
+      <div class="px-5 py-3 border-t border-white/10 text-center">
+        <span class="text-xs text-white/30">✨ 只顯示最新 20 則通知</span>
+      </div>
+    </div>
+
+    <!-- Connection indicator -->
+    <div class="fixed top-4 left-4 z-50 flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-full border border-white/10 text-xs" id="statusBar">
+      <div class="connection-indicator disconnected" id="connectionIndicator"></div>
+      <span id="statusText">離線</span>
+    </div>
+
+    <!-- NAV -->
+    <nav class="sticky top-0 z-50 backdrop-blur-xl bg-starry-deep/70 border-b border-white/10" id="mainNav">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2 cursor-pointer" onclick="navigateTo('home')">
+          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-cream-gold to-morandi-pink flex items-center justify-center text-starry-deep font-bold text-sm shadow-lg">RS</div>
+          <span class="font-bold text-lg tracking-wide hidden sm:block" id="navTitle" style="font-family:'Quicksand',sans-serif;">Rewrite Story</span>
+        </div>
+        <div class="relative flex-1 max-w-xs mx-2">
+          <input type="text" id="searchInput" class="search-box w-full bg-white/10 border border-white/15 rounded-full pl-9 pr-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:bg-white/15 focus:border-cream-gold/40" placeholder="搜尋故事...">
+          <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40"></i>
+        </div>
+        <div class="flex items-center gap-2">
+          <select id="langSwitcher" onchange="switchLang(this.value)" class="bg-white/10 border border-white/15 rounded-full px-2 py-1.5 text-xs cursor-pointer focus:outline-none">
+            <option value="zh-TW">繁中</option>
+            <option value="zh-CN">简中</option>
+            <option value="en">EN</option>
+          </select>
+          <button onclick="navigateTo('bookshelf')" class="p-2 rounded-full hover:bg-white/10 transition" title="我的書櫃"><i data-lucide="book-open" class="w-5 h-5"></i></button>
+          <button onclick="navigateTo('submit')" class="p-2 rounded-full hover:bg-white/10 transition" title="投稿"><i data-lucide="pen-tool" class="w-5 h-5"></i></button>
+          <button onclick="navigateTo('coread')" class="p-2 rounded-full hover:bg-white/10 transition relative" title="共讀房間">
+            <i data-lucide="link" class="w-5 h-5"></i>
+            <span id="roomBadge" class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center font-bold hidden">1</span>
+          </button>
+          <button onclick="openAdminModal()" class="p-2 rounded-full hover:bg-white/10 transition" title="後台"><i data-lucide="shield" class="w-5 h-5"></i></button>
+          <!-- Notification Bell -->
+          <button onclick="toggleNotifPanel()" class="p-2 rounded-full hover:bg-white/10 transition relative" title="通知" id="bellBtn">
+            <i data-lucide="bell" class="w-5 h-5" id="bellIcon"></i>
+            <span id="bellBadge" class="bell-badge hidden">0</span>
+          </button>
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-dreamy-lavender to-morandi-pink flex items-center justify-center text-xs font-bold shadow-md cursor-pointer">🌙</div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ===== HOME PAGE ===== -->
+    <div class="page active" id="page-home">
+      <section class="relative py-16 px-4 text-center overflow-hidden">
+        <div class="moon-glow absolute top-6 right-[15%] w-16 h-16 rounded-full bg-gradient-to-br from-cream-gold to-cream-warm opacity-80"></div>
+        <div class="relative z-10 max-w-2xl mx-auto">
+          <h1 class="text-4xl sm:text-5xl font-bold mb-3 bg-gradient-to-r from-cream-gold via-morandi-pink to-dreamy-lavender bg-clip-text text-transparent" id="heroTitle" style="font-family:'Quicksand',sans-serif; line-height:1.3;">Rewrite Story</h1>
+          <p class="text-white/60 text-lg mb-8" id="heroSubtitle">每晚一個故事，溫柔入夢</p>
+          <div class="flex justify-center gap-3 flex-wrap" id="categoryBar">
+            <button class="cat-pill px-5 py-2 rounded-full text-sm font-medium bg-morandi-pink/30 border border-morandi-pink/40 text-morandi-blush" data-cat="all" onclick="filterCat('all')">✨ 全部</button>
+            <button class="cat-pill px-5 py-2 rounded-full text-sm font-medium bg-white/5 border border-white/10 text-white/60" data-cat="love" onclick="filterCat('love')">💕 愛情</button>
+            <button class="cat-pill px-5 py-2 rounded-full text-sm font-medium bg-white/5 border border-white/10 text-white/60" data-cat="history" onclick="filterCat('history')">📜 歷史</button>
+            <button class="cat-pill px-5 py-2 rounded-full text-sm font-medium bg-white/5 border border-white/10 text-white/60" data-cat="mystery" onclick="filterCat('mystery')">🔮 懸疑</button>
+          </div>
+        </div>
+      </section>
+      <section class="px-4 pb-8 max-w-6xl mx-auto">
+        <div class="flex items-center gap-2 mb-5">
+          <span class="text-2xl">🤖</span>
+          <h2 class="text-xl font-bold text-cream-gold">AI 猜你喜歡</h2>
+          <span class="text-xs bg-cream-gold/20 text-cream-gold px-2 py-0.5 rounded-full">K-Means 推薦</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5" id="aiGrid"></div>
+      </section>
+      <section class="px-4 pb-8 max-w-6xl mx-auto">
+        <div class="flex items-center gap-2 mb-5">
+          <span class="text-2xl crown-bounce inline-block">👑</span>
+          <h2 class="text-xl font-bold text-cream-gold">動態排行榜</h2>
+          <span class="text-xs bg-starry-light/20 text-starry-glow px-2 py-0.5 rounded-full">時間衰減算法</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5" id="leaderboardGrid"></div>
+      </section>
+      <section class="px-4 pb-16 max-w-6xl mx-auto">
+        <h2 class="text-xl font-bold text-cream-gold mb-5 flex items-center gap-2"><span>📚</span> <span>全部故事</span></h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5" id="allBooksGrid"></div>
+      </section>
+    </div>
+
+    <!-- ===== STORY DETAIL PAGE ===== -->
+    <div class="page" id="page-detail">
+      <div class="max-w-3xl mx-auto px-4 py-8">
+        <button onclick="navigateTo('home')" class="flex items-center gap-1 text-white/50 hover:text-white mb-6 text-sm transition">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> 返回
+        </button>
+        <div id="detailContent"></div>
+      </div>
+    </div>
+
+    <!-- ===== BOOKSHELF PAGE ===== -->
+    <div class="page" id="page-bookshelf">
+      <div class="max-w-5xl mx-auto px-4 py-8">
+        <h2 class="text-2xl font-bold text-cream-gold mb-6 flex items-center gap-2"><span>📖</span> <span id="bookshelfTitle">我的書櫃</span></h2>
+        <div id="bookshelfGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+        <div id="emptyBookshelf" class="hidden text-center py-20 text-white/40">
+          <div class="text-5xl mb-4">🌙</div>
+          <p>還沒有收藏任何故事呢</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SUBMIT PAGE ===== -->
+    <div class="page" id="page-submit">
+      <div class="max-w-2xl mx-auto px-4 py-8">
+        <h2 class="text-2xl font-bold text-cream-gold mb-6 flex items-center gap-2"><span>✏️</span> <span>投稿故事</span></h2>
+        <div class="space-y-5">
+          <div>
+            <label class="block text-sm text-white/60 mb-1">故事標題</label>
+            <input type="text" id="submitTitle" placeholder="輸入故事標題..." class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50">
+          </div>
+          <div>
+            <label class="block text-sm text-white/60 mb-1">分類</label>
+            <select id="submitCat" class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-cream-gold/50">
+              <option value="love">💕 愛情</option>
+              <option value="history">📜 歷史</option>
+              <option value="mystery">🔮 懸疑</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-white/60 mb-1">故事內容</label>
+            <textarea id="submitContent" rows="8" placeholder="開始寫你的故事..." class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 resize-none"></textarea>
+          </div>
+          <button onclick="handleSubmit()" class="w-full py-3 rounded-2xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold text-lg hover:opacity-90 transition shadow-lg">🚀 送出投稿</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== CO-READING PAGE ===== -->
+    <div class="page" id="page-coread">
+      <div class="max-w-6xl mx-auto px-4 py-8">
+        <h2 class="text-2xl font-bold text-cream-gold mb-6 flex items-center gap-2"><span>🔗</span> <span>遠端共讀房間</span></h2>
+        <div class="bg-white/5 border border-white/10 rounded-3xl p-6 mb-8">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-white/60 mb-2">房間碼</label>
+              <div class="flex gap-2">
+                <input type="text" id="roomInput" placeholder="輸入房間碼..." class="flex-1 bg-white/10 border border-white/15 rounded-2xl px-4 py-2 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50">
+                <button onclick="joinRoom()" class="px-6 py-2 rounded-2xl bg-cream-gold/30 text-cream-gold font-medium hover:bg-cream-gold/40 transition">加入</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm text-white/60 mb-2">我的房間碼</label>
+              <div class="flex gap-2">
+                <input type="text" id="myRoomId" readonly placeholder="點擊下方建立房間..." class="flex-1 bg-white/10 border border-white/15 rounded-2xl px-4 py-2 text-white focus:outline-none cursor-not-allowed opacity-60">
+                <button onclick="createRoom()" class="px-6 py-2 rounded-2xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold hover:opacity-90 transition">建立</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="splitViewContainer" class="hidden">
+          <h3 class="text-lg font-bold text-cream-gold mb-4">📱 分屏預覽 (左=主房間 右=對方視角)</h3>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 overflow-hidden" style="max-height:600px;">
+              <h4 class="text-sm font-bold text-morandi-pink mb-2">👤 我的視角</h4>
+              <div id="myView" class="bg-starry-deep/50 rounded-xl p-4 text-sm text-white/70 overflow-y-auto" style="height:520px;"><p>故事文字會在這裡顯示...</p></div>
+            </div>
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 overflow-hidden" style="max-height:600px;">
+              <h4 class="text-sm font-bold text-dreamy-lavender mb-2">👥 對方視角 (實時同步)</h4>
+              <div id="remoteView" class="bg-starry-deep/50 rounded-xl p-4 text-sm text-white/70 overflow-y-auto" style="height:520px;"><p>對方的故事文字會在這裡同步顯示...</p></div>
+            </div>
+          </div>
+          <div class="mt-4 flex gap-2">
+            <button onclick="simulateScroll()" class="px-4 py-2 rounded-2xl bg-starry-light/30 text-starry-glow font-medium text-sm hover:bg-starry-light/40 transition">📜 模擬捲動同步</button>
+            <button onclick="simulateFirefly()" class="px-4 py-2 rounded-2xl bg-cream-gold/30 text-cream-gold font-medium text-sm hover:bg-cream-gold/40 transition">✨ 模擬螢火蟲游標</button>
+          </div>
+        </div>
+        <div id="roomStatus" class="mt-8 text-center text-white/40 text-sm">
+          <p>使用「建立房間」或「加入房間」開始共讀吧！</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== ADMIN PAGE ===== -->
+    <div class="page" id="page-admin">
+      <div class="max-w-4xl mx-auto px-4 py-8">
+        <h2 class="text-2xl font-bold text-cream-gold mb-6 flex items-center gap-2"><span>🛡️</span> <span>審核後台</span></h2>
+
+        <!-- NOTIFICATION PUBLISHER -->
+        <div class="bg-white/5 border border-white/10 rounded-3xl p-6 mb-8">
+          <h3 class="text-lg font-bold text-cream-gold mb-4 flex items-center gap-2"><span>📣</span> 發布站內通知</h3>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm text-white/60 mb-1">通知標題</label>
+              <input type="text" id="notifTitle" placeholder="輸入通知標題..." maxlength="50"
+                class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 text-sm">
+            </div>
+            <div>
+              <label class="block text-sm text-white/60 mb-1">通知內容</label>
+              <textarea id="notifContent" rows="3" placeholder="輸入通知內容..." maxlength="200"
+                class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 resize-none text-sm"></textarea>
+            </div>
+            <div class="flex items-center gap-4 flex-wrap">
+              <div>
+                <label class="block text-sm text-white/60 mb-1">重要程度</label>
+                <div class="flex gap-2">
+                  <label class="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-xl border border-white/15 hover:border-starry-glow/50 transition" id="levelNormalLabel">
+                    <input type="radio" name="notifLevel" value="normal" checked onchange="updateLevelUI()" class="accent-starry-glow">
+                    <span class="text-sm">🌙 一般公告</span>
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer px-4 py-2 rounded-xl border border-white/15 hover:border-red-400/50 transition" id="levelUrgentLabel">
+                    <input type="radio" name="notifLevel" value="urgent" onchange="updateLevelUI()" class="accent-red-400">
+                    <span class="text-sm">🚨 緊急公告</span>
+                  </label>
+                </div>
+              </div>
+              <div class="flex items-end gap-2 mt-auto">
+                <label class="flex items-center gap-2 text-sm cursor-pointer text-white/60">
+                  <input type="checkbox" id="notifBanner" class="w-4 h-4 rounded accent-morandi-pink" checked>
+                  頂部橫幅
+                </label>
+              </div>
+            </div>
+            <button onclick="publishNotification()" class="w-full py-3 rounded-2xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold hover:opacity-90 transition shadow-lg">
+              📣 立即發布通知
+            </button>
+          </div>
+        </div>
+
+        <!-- PUBLISHED NOTIFICATIONS LIST -->
+        <div class="mb-8">
+          <h3 class="text-lg font-bold text-cream-gold mb-4 flex items-center gap-2"><span>📋</span> 已發布通知 <span id="notifAdminCount" class="text-sm text-white/40 font-normal">(0)</span></h3>
+          <div id="notifAdminList" class="space-y-3">
+            <div class="text-center py-8 text-white/30 text-sm">尚未發布任何通知</div>
+          </div>
+        </div>
+
+        <!-- STORY MODERATION -->
+        <h3 class="text-lg font-bold text-cream-gold mb-4 flex items-center gap-2"><span>📝</span> 待審核故事</h3>
+        <div id="adminList" class="space-y-4 mb-10"></div>
+
+        <!-- PUBLISHED STORIES MANAGEMENT -->
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-cream-gold flex items-center gap-2">
+            <span>📚</span> 已上架書籍管理
+            <span id="publishedCount" class="text-sm text-white/40 font-normal">(0)</span>
+          </h3>
+          <button onclick="loadPublishedStories()" class="text-xs text-white/40 hover:text-white/70 px-3 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 transition flex items-center gap-1">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i> 重新整理
+          </button>
+        </div>
+        <div id="publishedList" class="space-y-3">
+          <div class="text-center py-8 text-white/30 text-sm">點擊上方「重新整理」載入已上架書籍</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end app-shell -->
+
+  <script>
+    // ============ DATA ============
+    const stories = [
+      { id:1, title:"月光下的信", titleEn:"Letter Under Moonlight", titleCn:"月光下的信", cat:"love", cover:"linear-gradient(135deg,#e8c4c4,#c5b3d9)", emoji:"💌", views:3842, completions:1204, favs:876, days:3, approved:true, content:"在一個寧靜的夜晚，月光灑在窗台上。她打開了那封等待已久的信，字裡行間都是溫柔的思念。紙張微微泛黃，是三年前寫的。他說他會在星空下等待，直到她準備好回到他身邊。\n\n她的手指輕輕撫過每一個筆畫，彷彿能感受到他當時的溫度。窗外的月亮恰好圓滿，像是在祝福這段沉睡已久的愛情。\n\n她決定了，要寫一封回信。" },
+      { id:2, title:"星河漫遊記", titleEn:"Galaxy Wanderer", titleCn:"星河漫游记", cat:"mystery", cover:"linear-gradient(135deg,#2c3e6b,#7ba7cc)", emoji:"🌌", views:2956, completions:987, favs:654, days:5, approved:true, content:"太空船穿越了第七個星系，儀表板上的數字不停跳動。船長發現了一個不該存在的信號源，來自一個被遺忘的星球。\n\n古老的文明在那裡沉睡已久，等待著有人能解開他們的謎團。探險隊決定著陸，揭開這段宇宙的秘密。\n\n當他們踏上星球表面時，整個世界閃爍著詭異的光芒。是歡迎？還是警告？沒有人知道。" },
+      { id:3, title:"長安夜雨", titleEn:"Rainy Night in Chang'an", titleCn:"长安夜雨", cat:"history", cover:"linear-gradient(135deg,#f0d9a0,#d4a5a5)", emoji:"🏮", views:4120, completions:1560, favs:1230, days:2, approved:true, content:"大唐天寶年間，長安城下起了秋雨。一位詩人走過朱雀大街，腳步踏在濕漉漉的青石板上。\n\n酒肆裡傳來絲竹之聲，舞女在紅燭下轉動，但他的心思卻飄向了遠方的故鄉。多少年沒見到家鄉的山了？多少年沒寫過思鄉的詩了？\n\n他停下腳步，雨幕中，一盞孤燈亮了起來。那光芒彷彿在呼喚什麼遺失已久的東西。" },
+      { id:4, title:"消失的第八夜", titleEn:"The Vanished 8th Night", titleCn:"消失的第八夜", cat:"mystery", cover:"linear-gradient(135deg,#4a6fa5,#2c3e6b)", emoji:"🔮", views:1876, completions:634, favs:421, days:7, approved:true, content:"日記本上清楚地記載了七個夜晚的故事，但第八頁被撕掉了。偵探翻遍了整間書房，卻找不到那張紙。\n\n只有一根紅線頭留在書脊上，像是在指向什麼。線的另一端通向書櫃後面，那裡隱藏著一個秘密房間。\n\n門被打開時，一陣冷風吹出，彷彿是時間本身在嘆息。第八夜終於要揭曉了。" },
+      { id:5, title:"櫻花樹下的約定", titleEn:"Promise Under Sakura", titleCn:"樱花树下的约定", cat:"love", cover:"linear-gradient(135deg,#f2d7d5,#e8c4c4)", emoji:"🌸", views:5234, completions:2100, favs:1890, days:1, approved:true, content:"春天來了，他們回到了十年前那棵櫻花樹下。花瓣緩緩飄落，像是時光在溫柔地倒轉。\n\n她還記得他穿著淺藍色的牛仔褲，在樹下單膝跪地的樣子。十年，他們經歷了生活的風風雨雨，但約定依舊如新。\n\n新的花季，新的承諾。他們決定不再錯過彼此。" },
+      { id:6, title:"埃及豔后的密碼", titleEn:"Cleopatra's Code", titleCn:"埃及艳后的密码", cat:"history", cover:"linear-gradient(135deg,#f5e6ca,#f0d9a0)", emoji:"🏺", views:2340, completions:780, favs:560, days:10, approved:true, content:"考古學家在金字塔深處發現了一卷莎草紙，上面寫著只有克利奧帕特拉才懂的密碼。這道密碼的解開將改寫歷史。\n\n代碼被解譯後，揭示了一個古老的帝國秘密：埃及豔后其實是時間旅行者。\n\n真相太駭人聽聞了，學術界不敢公開。這個秘密被塵封在博物館的地下室，等著未來人發現。" },
+      { id:7, title:"雲端書店", titleEn:"Cloud Bookshop", titleCn:"云端书店", cat:"love", cover:"linear-gradient(135deg,#a8d8ea,#b8e0d2)", emoji:"☁️", views:1560, completions:520, favs:340, days:12, approved:true, content:"在海拔三千公尺的山上，有一間只在雲霧中出現的書店。店主是一位白髮蒼蒼的老奶奶，她說這裡是失物招領處。\n\n失落的愛情、遺失的時光、被遺忘的人，都會在這裡重新相遇。每一本書都是一段故事，每一位顧客都在尋找失去的什麼。\n\n年輕人發現自己最需要的書，竟然是寫著他和她名字的那一本。" },
+      { id:8, title:"午夜圖書館", titleEn:"Midnight Library", titleCn:"午夜图书馆", cat:"mystery", cover:"linear-gradient(135deg,#2c3e6b,#c5b3d9)", emoji:"📚", views:980, completions:320, favs:210, days:4, approved:false, content:"每到午夜十二點，圖書館的燈會自動亮起。沒有人知道是誰在看書，但書總是被翻到不同的頁面。\n\n有人說是亡靈在讀書，有人說是時間本身在訴說故事。圖書館員決定在午夜設下陷阱，要看看究竟是誰。\n\n午夜來臨時，他看到了——一個漸漸消失的身影，彷彿在時間的罅隙中苟延殘喘。" },
+    ];
+
+    let favorites = new Set();
+    let readingProgress = {};
+    let currentLang = 'zh-TW';
+    let currentCat = 'all';
+    let currentRoom = null;
+    let storyComments = {};
+
+    // ============ TRANSLATIONS ============
+    const translations = {
+      "zh-TW": {
+        search_placeholder: "搜尋故事...", hero_subtitle: "每晚一個故事，溫柔入夢",
+        cat_all: "✨ 全部", cat_love: "💕 愛情", cat_history: "📜 歷史", cat_mystery: "🔮 懸疑",
+        ai_recommend: "AI 猜你喜歡", ai_badge: "K-Means 推薦", leaderboard: "動態排行榜",
+        time_decay: "時間衰減算法", all_stories: "全部故事", back: "返回",
+        my_bookshelf: "我的書櫃", empty_bookshelf: "還沒有收藏任何故事呢",
+        submit_story: "投稿故事", story_title_label: "故事標題",
+        views: "閱讀", completions: "完讀", favorites_label: "收藏",
+        start_reading: "開始閱讀", continue_reading: "繼續閱讀", add_fav: "收藏",
+        remove_fav: "取消收藏", approve: "通過", reject: "駁回", pending: "待審核",
+        toast_fav_add: "已加入書櫃 💕", toast_fav_remove: "已從書櫃移除",
+        toast_submit: "投稿成功！等待審核中 ✨", toast_approve: "已通過審核 ✅",
+        score_label: "熱度分數", reading_progress: "閱讀進度",
+        coread_title: "遠端共讀房間", room_created: "房間已建立 🔗",
+        room_joined: "已加入房間 ✨", room_error: "房間代碼不存在",
+      },
+      "zh-CN": {
+        search_placeholder: "搜索故事...", hero_subtitle: "每晚一个故事，温柔入梦",
+        cat_all: "✨ 全部", cat_love: "💕 爱情", cat_history: "📜 历史", cat_mystery: "🔮 悬疑",
+        ai_recommend: "AI 猜你喜欢", ai_badge: "K-Means 推荐", leaderboard: "动态排行榜",
+        time_decay: "时间衰减算法", all_stories: "全部故事", back: "返回",
+        my_bookshelf: "我的书柜", empty_bookshelf: "还没有收藏任何故事呢",
+        views: "阅读", completions: "完读", favorites_label: "收藏",
+        start_reading: "开始阅读", continue_reading: "继续阅读", add_fav: "收藏",
+        remove_fav: "取消收藏", approve: "通过", reject: "驳回", pending: "待审核",
+        toast_fav_add: "已加入书柜 💕", toast_fav_remove: "已从书柜移除",
+        toast_submit: "投稿成功！等待审核中 ✨", toast_approve: "已通过审核 ✅",
+        score_label: "热度分数", reading_progress: "阅读进度",
+        coread_title: "远端共读房间", room_created: "房间已建立 🔗",
+        room_joined: "已加入房间 ✨",
+      },
+      "en": {
+        search_placeholder: "Search stories...", hero_subtitle: "A story every night, drift to sleep gently",
+        cat_all: "✨ All", cat_love: "💕 Romance", cat_history: "📜 History", cat_mystery: "🔮 Mystery",
+        ai_recommend: "AI Picks For You", ai_badge: "K-Means", leaderboard: "Trending Leaderboard",
+        time_decay: "Time-Decay Score", all_stories: "All Stories", back: "Back",
+        my_bookshelf: "My Bookshelf", empty_bookshelf: "No favorites yet",
+        views: "Views", completions: "Finished", favorites_label: "Favs",
+        start_reading: "Start Reading", continue_reading: "Continue", add_fav: "Favorite",
+        remove_fav: "Unfavorite", approve: "Approve", reject: "Reject", pending: "Pending",
+        toast_fav_add: "Added to bookshelf 💕", toast_fav_remove: "Removed from bookshelf",
+        toast_submit: "Submitted! Awaiting review ✨", toast_approve: "Approved ✅",
+        score_label: "Score", reading_progress: "Progress",
+        coread_title: "Remote Co-Reading", room_created: "Room created 🔗",
+        room_joined: "Room joined ✨",
+      }
+    };
+
+    function t(key) { return translations[currentLang]?.[key] || translations['zh-TW'][key] || key; }
+
+    function calcScore(s) {
+      return ((s.views * 1) + (s.completions * 3) + (s.favs * 5)) / Math.pow(s.days + 2, 1.5);
+    }
+
+    // ============ STARS ============
+    function createStars() {
+      const sf = document.getElementById('starfield');
+      sf.innerHTML = '';
+      for (let i = 0; i < 60; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        const size = Math.random() * 3 + 1;
+        star.style.cssText = `width:${size}px;height:${size}px;top:${Math.random()*100}%;left:${Math.random()*100}%;--dur:${Math.random()*3+2}s;animation-delay:${Math.random()*3}s;`;
+        sf.appendChild(star);
+      }
+    }
+
+    // ============ TOAST ============
+    function showToast(msg, color = '#e8c4c4') {
+      const c = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      el.className = 'toast-msg';
+      el.style.background = color;
+      el.textContent = msg;
+      c.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 2500);
+    }
+
+    function updateConnectionStatus(connected) {
+      const indicator = document.getElementById('connectionIndicator');
+      const text = document.getElementById('statusText');
+      if (connected) {
+        indicator.classList.remove('disconnected'); indicator.classList.add('connected');
+        text.textContent = '已連線 ✓';
+      } else {
+        indicator.classList.remove('connected'); indicator.classList.add('disconnected');
+        text.textContent = '離線';
+      }
+    }
+
+    function createFirefly(x, y) {
+      const fly = document.createElement('div');
+      fly.className = 'firefly';
+      fly.style.left = x + 'px'; fly.style.top = y + 'px';
+      document.body.appendChild(fly);
+      setTimeout(() => fly.remove(), 1000);
+    }
+
+    // ============ CO-READING ============
+    function generateRoomId() { return 'ROOM-' + Math.random().toString(36).substr(2, 6).toUpperCase(); }
+
+    function createRoom() {
+      currentRoom = generateRoomId();
+      document.getElementById('myRoomId').value = currentRoom;
+      document.getElementById('roomBadge').classList.remove('hidden');
+      showToast(t('room_created') + ' ' + currentRoom, '#b8e0d2');
+      document.getElementById('splitViewContainer').classList.remove('hidden');
+      document.getElementById('roomStatus').innerHTML = `<p>房間已建立 • 代碼: <strong>${currentRoom}</strong> • 邀請朋友加入吧！</p>`;
+      openStoryInSplitView(1);
+    }
+
+    function joinRoom() {
+      const code = document.getElementById('roomInput').value.trim();
+      if (!code) { showToast('請輸入房間碼', '#d4a5a5'); return; }
+      currentRoom = code;
+      document.getElementById('roomBadge').classList.remove('hidden');
+      showToast(t('room_joined'), '#b8e0d2');
+      document.getElementById('splitViewContainer').classList.remove('hidden');
+      document.getElementById('roomStatus').innerHTML = `<p>已加入房間 • 代碼: <strong>${code}</strong></p>`;
+      updateConnectionStatus(true);
+      setTimeout(() => openStoryInSplitView(1), 500);
+    }
+
+    function openStoryInSplitView(storyId) {
+      const story = stories.find(s => s.id === storyId);
+      if (!story) return;
+      const myView = document.getElementById('myView');
+      const remoteView = document.getElementById('remoteView');
+      myView.innerHTML = `<p class="text-white font-bold text-base mb-4">${story.title}</p><p class="text-sm leading-relaxed">${story.content.replace(/\n\n/g,'<br><br>')}</p>`;
+      remoteView.innerHTML = `<p class="text-white font-bold text-base mb-4">${story.title}</p><p class="text-sm leading-relaxed">${story.content.replace(/\n\n/g,'<br><br>')}</p>`;
+      myView.addEventListener('mousedown', (e) => {
+        createFirefly(e.clientX, e.clientY);
+        setTimeout(() => {
+          const rect = remoteView.getBoundingClientRect();
+          const fly = document.createElement('div');
+          fly.className = 'firefly';
+          fly.style.position = 'absolute'; fly.style.zIndex = '50';
+          fly.style.left = (e.clientX - rect.left) + 'px'; fly.style.top = (e.clientY - rect.top) + 'px';
+          remoteView.appendChild(fly);
+          setTimeout(() => fly.remove(), 1000);
+        }, 100);
+      });
+    }
+
+    function simulateScroll() {
+      const myView = document.getElementById('myView');
+      const remoteView = document.getElementById('remoteView');
+      myView.scrollTop += 100;
+      setTimeout(() => { remoteView.scrollTop += 100; }, 200);
+    }
+
+    function simulateFirefly() {
+      const myView = document.getElementById('myView');
+      const rect = myView.getBoundingClientRect();
+      createFirefly(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }
+
+    // ============ ANONYMOUS NICKNAMES ============
+    const anonymousNicknames = ["🌙 沉睡的貓咪","⭐ 迷路的小星星","☁️ 軟綿綿的雲朵","🐳 吐泡泡的小鯨魚","🍓 甜甜的草莓大福","🦋 翩翩飛舞的蝴蝶","🌻 向日葵的夢想","🎀 粉紅色的蝴蝶結","🧚 森林裡的精靈","🌊 輕柔的海浪聲"];
+    function getRandomNickname() { return anonymousNicknames[Math.floor(Math.random() * anonymousNicknames.length)]; }
+
+    // ============ BOOK CARD ============
+    function createBookCard(s, delay = 0) {
+      const isFav = favorites.has(s.id);
+      const progress = readingProgress[s.id] || 0;
+      const getTitle = () => currentLang === 'en' ? s.titleEn : (currentLang === 'zh-CN' ? s.titleCn : s.title);
+      return `
+        <div class="book-card fade-up rounded-3xl overflow-hidden cursor-pointer relative group" style="animation-delay:${delay}ms" onclick="openStory('${s.id}')">
+          <div class="aspect-[3/4] relative" style="background:${s.cover}">
+            <div class="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+              <span class="text-4xl mb-2">${s.emoji}</span>
+              <h3 class="font-bold text-base leading-tight text-white drop-shadow-lg">${getTitle()}</h3>
+              <span class="text-xs mt-1 px-2 py-0.5 rounded-full bg-white/20 text-white/80">${s.cat==='love'?'💕':s.cat==='history'?'📜':'🔮'}</span>
+            </div>
+            <div class="watermark">Rewrite Story</div>
+            <button onclick="event.stopPropagation();toggleFav('${s.id}')" class="absolute top-3 right-3 w-8 h-8 rounded-full ${isFav?'bg-morandi-pink text-starry-deep':'bg-black/30 text-white/70'} flex items-center justify-center transition hover:scale-110">
+              <i data-lucide="heart" class="w-4 h-4" ${isFav?'style="fill:currentColor"':''}></i>
+            </button>
+            ${progress > 0 ? `<div class="absolute bottom-0 left-0 right-0 h-1 bg-black/20"><div class="progress-fill h-full bg-cream-gold rounded-full" style="width:${progress}%"></div></div>` : ''}
+          </div>
+          <div class="p-3 bg-starry-deep/80">
+            <div class="flex items-center justify-between text-xs text-white/40">
+              <span>${s.views.toLocaleString()} ${t('views')}</span>
+              <span>❤️ ${s.favs}</span>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // ============ LEADERBOARD CARD ============
+    function createLeaderCard(s, rank) {
+      const medals = ['🥇','🥈','🥉'];
+      const medalColors = ['from-cream-gold/30 to-cream-warm/20','from-gray-300/20 to-gray-400/10','from-amber-600/20 to-amber-700/10'];
+      const score = calcScore(s).toFixed(1);
+      const getTitle = () => currentLang === 'en' ? s.titleEn : (currentLang === 'zh-CN' ? s.titleCn : s.title);
+      return `
+        <div class="fade-up rounded-3xl overflow-hidden relative group medal-shimmer cursor-pointer bg-gradient-to-br ${medalColors[rank]} border border-white/10 backdrop-blur-sm" style="animation-delay:${rank*120}ms" onclick="openStory('${s.id}')">
+          <div class="p-5">
+            <div class="flex items-start justify-between mb-3">
+              <span class="text-3xl crown-bounce inline-block">${medals[rank]}</span>
+              <span class="text-xs bg-cream-gold/20 text-cream-gold px-2 py-1 rounded-full font-bold">${t('score_label')} ${score}</span>
+            </div>
+            <div class="flex items-center gap-3 mb-3">
+              <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style="background:${s.cover}">${s.emoji}</div>
+              <div>
+                <h3 class="font-bold text-sm leading-tight">${getTitle()}</h3>
+                <p class="text-xs text-white/40 mt-0.5">${s.views.toLocaleString()} ${t('views')} · ${s.completions} ${t('completions')}</p>
+              </div>
+            </div>
+            <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div class="h-full rounded-full bg-gradient-to-r from-cream-gold to-morandi-pink transition-all duration-1000" style="width:${Math.min(100, score/10*100)}%"></div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    // ============ RENDER HOME ============
+    function renderHome() {
+      const approved = stories.filter(s => s.approved);
+      const filtered = currentCat === 'all' ? approved : approved.filter(s => s.cat === currentCat);
+      const searchVal = document.getElementById('searchInput').value.toLowerCase();
+      const searched = searchVal ? filtered.filter(s => s.title.toLowerCase().includes(searchVal) || s.titleEn.toLowerCase().includes(searchVal)) : filtered;
+
+      const aiPicks = [...approved].sort(() => Math.random() - 0.5).slice(0, 4);
+      document.getElementById('aiGrid').innerHTML = aiPicks.map((s, i) => createBookCard(s, i * 80)).join('');
+
+      const ranked = [...approved].sort((a, b) => calcScore(b) - calcScore(a)).slice(0, 3);
+      document.getElementById('leaderboardGrid').innerHTML = ranked.map((s, i) => createLeaderCard(s, i)).join('');
+
+      document.getElementById('allBooksGrid').innerHTML = searched.map((s, i) => createBookCard(s, i * 60)).join('');
+      lucide.createIcons();
+    }
+
+    // ============ NAVIGATION ============
+    function navigateTo(page) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + page).classList.add('active');
+      document.getElementById('appShell').scrollTop = 0;
+      if (page === 'home') renderHome();
+      if (page === 'bookshelf') renderBookshelf();
+      if (page === 'admin') renderAdmin();
+    }
+
+    // ============ STORY DETAIL ============
+    function openStory(id) {
+      // 統一轉成字串比對，同時相容數字 id（內建）和字串 id（Firebase）
+      const s = stories.find(x => String(x.id) === String(id));
+      if (!s) return;
+      if (!readingProgress[s.id]) readingProgress[s.id] = 0;
+      if (!storyComments[id]) storyComments[id] = [];
+      const progress = readingProgress[s.id];
+      const isFav = favorites.has(String(s.id));
+      const getTitle = () => currentLang === 'en' ? s.titleEn : (currentLang === 'zh-CN' ? s.titleCn : s.title);
+      const comments = storyComments[id] || [];
+      const formattedContent = s.content.replace(/\n\n/g, '</p><p class="mt-4">');
+
+      document.getElementById('detailContent').innerHTML = `
+        <div class="fade-up">
+          <div class="aspect-[2/1] rounded-3xl overflow-hidden relative mb-6" style="background:${s.cover}">
+            <div class="absolute inset-0 flex items-center justify-center"><span class="text-7xl">${s.emoji}</span></div>
+            <div class="watermark" style="font-size:14px">Rewrite Story</div>
+          </div>
+          <h1 class="text-3xl font-bold mb-2" style="font-family:'Quicksand',sans-serif">${getTitle()}</h1>
+          <div class="flex items-center gap-4 text-sm text-white/50 mb-4">
+            <span>👁️ ${s.views.toLocaleString()} ${t('views')}</span>
+            <span>✅ ${s.completions} ${t('completions')}</span>
+            <span>❤️ ${s.favs} ${t('favorites_label')}</span>
+          </div>
+          ${progress > 0 ? `<div class="mb-4"><span class="text-xs text-white/40">${t('reading_progress')}: ${progress}%</span><div class="h-2 bg-white/10 rounded-full mt-1"><div class="progress-fill h-full bg-gradient-to-r from-cream-gold to-morandi-pink rounded-full" style="width:${progress}%"></div></div></div>` : ''}
+          <div class="flex gap-3 mb-8">
+            <button onclick="startReading('${s.id}')" class="flex-1 py-3 rounded-2xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold hover:opacity-90 transition">
+              ${progress > 0 ? t('continue_reading') : t('start_reading')}
+            </button>
+            <button onclick="toggleFav('${s.id}');openStory('${s.id}')" class="px-5 py-3 rounded-2xl ${isFav?'bg-morandi-pink/30 text-morandi-pink':'bg-white/10 text-white/60'} font-medium hover:opacity-80 transition">
+              ${isFav ? '❤️ ' + t('remove_fav') : '🤍 ' + t('add_fav')}
+            </button>
+          </div>
+          <div class="bg-white/5 rounded-3xl p-6 border border-white/10 leading-relaxed text-white/80 text-base story-text" id="storyText">
+            <p>${formattedContent}</p>
+          </div>
+          <div class="mt-10 pt-8 border-t border-white/10">
+            <h3 class="text-xl font-bold text-cream-gold mb-6 flex items-center gap-2"><span>💬</span> 讀者迴響 (${comments.length})</h3>
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6">
+              <textarea id="commentText" placeholder="分享你的想法..." maxlength="300" class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 resize-none text-sm" rows="3"></textarea>
+              <div class="flex items-center justify-between mt-3">
+                <label class="flex items-center gap-2 text-sm cursor-pointer">
+                  <input type="checkbox" id="anonCheckbox" class="w-4 h-4 rounded accent-morandi-pink">
+                  <span class="text-white/60">匿名留言</span>
+                </label>
+                <button onclick="submitComment(${s.id})" class="px-5 py-2 rounded-xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold text-sm hover:opacity-90 transition">送出 ✨</button>
+              </div>
+            </div>
+            <div id="commentsList" class="space-y-4">
+              ${comments.length === 0 ? `<div class="text-center py-8 text-white/30"><p>還沒有人留言呢，你要第一個嗎？</p></div>` : comments.map((c, i) => `
+                <div class="fade-up bg-white/5 border border-white/10 rounded-2xl p-4" style="animation-delay:${i*60}ms">
+                  <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-dreamy-lavender to-morandi-pink flex items-center justify-center text-xs font-bold flex-shrink-0">${c.displayName.charAt(0)}</div>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center gap-2">
+                        <span class="${c.isAnonymous?'text-morandi-rose/80 font-medium':'text-white font-bold'} text-sm">${c.displayName}</span>
+                        ${c.isAnonymous ? '<span class="text-xs bg-morandi-rose/20 text-morandi-rose px-2 py-0.5 rounded-full">🎭 匿名</span>' : ''}
+                      </div>
+                      <p class="text-sm text-white/70 mt-2">${c.content}</p>
+                      <span class="text-xs text-white/30 mt-2 block">${c.timestamp}</span>
+                    </div>
+                  </div>
+                </div>`).join('')}
+            </div>
+          </div>
+        </div>`;
+      navigateTo('detail');
+      lucide.createIcons();
+    }
+
+    function submitComment(storyId) {
+      const text = document.getElementById('commentText').value.trim();
+      const isAnon = document.getElementById('anonCheckbox').checked;
+      if (!text) { showToast('請輸入留言內容', '#d4a5a5'); return; }
+      const displayName = isAnon ? getRandomNickname() : '👤 讀者';
+      const timestamp = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+      if (!storyComments[storyId]) storyComments[storyId] = [];
+      storyComments[storyId].push({ displayName, content: text, isAnonymous: isAnon, timestamp });
+      showToast(isAnon ? '匿名留言已送出 🎭' : '留言已送出 ✨', '#b8e0d2');
+      setTimeout(() => openStory(storyId), 400);
+    }
+
+    function startReading(id) {
+      const el = document.getElementById('storyText');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        let prog = readingProgress[id] || 0;
+        const interval = setInterval(() => {
+          prog = Math.min(100, prog + 5);
+          readingProgress[id] = prog;
+          if (prog >= 100) clearInterval(interval);
+        }, 500);
+      }
+    }
+
+    // ============ FAVORITES ============
+    function toggleFav(id) {
+      const sid = String(id);
+      if (favorites.has(sid)) { favorites.delete(sid); showToast(t('toast_fav_remove'), '#4a6fa5'); }
+      else { favorites.add(sid); showToast(t('toast_fav_add'), '#e8c4c4'); }
+      renderHome();
+    }
+
+    // ============ BOOKSHELF ============
+    function renderBookshelf() {
+      const favStories = stories.filter(s => favorites.has(s.id));
+      const grid = document.getElementById('bookshelfGrid');
+      const empty = document.getElementById('emptyBookshelf');
+      if (favStories.length === 0) { grid.innerHTML = ''; empty.classList.remove('hidden'); }
+      else { empty.classList.add('hidden'); grid.innerHTML = favStories.map((s, i) => createBookCard(s, i * 80)).join(''); }
+      lucide.createIcons();
+    }
+
+    // ============ SUBMIT ============
+    async function handleSubmit() {
+      const title = document.getElementById('submitTitle').value.trim();
+      const content = document.getElementById('submitContent').value.trim();
+      const cat = document.getElementById('submitCat').value;
+      if (!title || !content) { showToast('請填寫完整資料', '#d4a5a5'); return; }
+
+      const catEmojis = { love:'💌', history:'🏮', mystery:'🔮' };
+      const catCovers = {
+        love:'linear-gradient(135deg,#f2d7d5,#e8c4c4)',
+        history:'linear-gradient(135deg,#f0d9a0,#d4a5a5)',
+        mystery:'linear-gradient(135deg,#4a6fa5,#2c3e6b)'
+      };
+
+      try {
+        await db.collection('stories').add({
+          title, titleEn: title, titleCn: title,
+          content, cat,
+          cover: catCovers[cat] || catCovers.love,
+          emoji: catEmojis[cat] || '📖',
+          views: 0, completions: 0, favs: 0,
+          days: 0, approved: false,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast(t('toast_submit'), '#b8e0d2');
+        document.getElementById('submitTitle').value = '';
+        document.getElementById('submitContent').value = '';
+      } catch(e) {
+        console.error(e);
+        showToast('投稿失敗，請稍後再試', '#d4a5a5');
+      }
+    }
+
+    // ============ ADMIN ============
+    function renderAdmin() {
+      renderNotifAdminList();
+      loadPendingStories();
+      loadPublishedStories();
+    }
+
+    async function loadPendingStories() {
+      const list = document.getElementById('adminList');
+      list.innerHTML = `<div class="text-center py-8 text-white/40 text-sm">載入中...</div>`;
+      try {
+        const snap = await db.collection('stories').where('approved','==',false).orderBy('createdAt','desc').get();
+        if (snap.empty) {
+          list.innerHTML = `<div class="text-center py-12 text-white/40"><div class="text-4xl mb-3">✅</div><p>目前沒有待審核的故事</p></div>`;
+          return;
+        }
+        list.innerHTML = snap.docs.map(doc => {
+          const s = { id: doc.id, ...doc.data() };
+          return `
+            <div class="fade-up bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-4">
+              <div class="w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style="background:${s.cover}">${s.emoji}</div>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-bold truncate">${s.title}</h3>
+                <p class="text-xs text-white/40 mt-0.5">${s.cat} · 待審核</p>
+                <p class="text-xs text-white/30 mt-1 line-clamp-1">${(s.content||'').substring(0,60)}...</p>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="approveStory('${s.id}')" class="px-4 py-2 rounded-xl bg-green-500/20 text-green-300 text-sm font-medium hover:bg-green-500/30 transition">通過</button>
+                <button onclick="rejectStory('${s.id}')" class="px-4 py-2 rounded-xl bg-red-500/20 text-red-300 text-sm font-medium hover:bg-red-500/30 transition">駁回</button>
+              </div>
+            </div>`;
+        }).join('');
+      } catch(e) {
+        console.error(e);
+        list.innerHTML = `<div class="text-center py-8 text-red-400 text-sm">載入失敗，請確認 Firestore 已開啟</div>`;
+      }
+    }
+
+    async function approveStory(id) {
+      try {
+        await db.collection('stories').doc(id).update({ approved: true });
+        showToast(t('toast_approve'), '#b8e0d2');
+        loadPendingStories();
+        loadFirebaseStories();
+      } catch(e) { showToast('操作失敗', '#d4a5a5'); }
+    }
+
+    async function rejectStory(id) {
+      try {
+        await db.collection('stories').doc(id).delete();
+        showToast('已駁回並刪除', '#d4a5a5');
+        loadPendingStories();
+        loadFirebaseStories();
+      } catch(e) { showToast('操作失敗', '#d4a5a5'); }
+    }
+
+    async function unpublishStory(id) {
+      // 下架 = 將 approved 設為 false，資料仍保留
+      if (!confirm('確定要下架這本書嗎？書籍將從首頁移除，但資料不會刪除。')) return;
+      try {
+        await db.collection('stories').doc(id).update({ approved: false });
+        showToast('書籍已下架 📦', '#f0d9a0');
+        loadPublishedStories();
+        // Remove from local stories array too
+        const idx = stories.findIndex(s => s.id === id);
+        if (idx > -1) stories.splice(idx, 1);
+        renderHome();
+      } catch(e) { showToast('操作失敗', '#d4a5a5'); }
+    }
+
+    async function deletePublishedStory(id) {
+      if (!confirm('確定要永久刪除這本書嗎？此操作無法復原。')) return;
+      try {
+        await db.collection('stories').doc(id).delete();
+        showToast('書籍已永久刪除 🗑️', '#d4a5a5');
+        loadPublishedStories();
+        const idx = stories.findIndex(s => s.id === id);
+        if (idx > -1) stories.splice(idx, 1);
+        renderHome();
+      } catch(e) { showToast('操作失敗', '#d4a5a5'); }
+    }
+
+    async function loadPublishedStories() {
+      const list = document.getElementById('publishedList');
+      const countEl = document.getElementById('publishedCount');
+      list.innerHTML = `<div class="text-center py-8 text-white/40 text-sm">載入中...</div>`;
+      try {
+        const snap = await db.collection('stories').where('approved','==',true).orderBy('createdAt','desc').get();
+        // Also include built-in approved stories
+        const builtIn = stories.filter(s => s.approved && typeof s.id === 'number');
+        const total = snap.size + builtIn.length;
+        countEl.textContent = `(${total})`;
+
+        if (snap.empty && builtIn.length === 0) {
+          list.innerHTML = `<div class="text-center py-8 text-white/30 text-sm">目前沒有已上架的書籍</div>`;
+          return;
+        }
+
+        const firebaseDocs = snap.docs.map(doc => {
+          const s = { id: doc.id, ...doc.data() };
+          const ts = s.createdAt?.toDate ? s.createdAt.toDate().toLocaleDateString('zh-TW') : '未知';
+          return `
+            <div class="fade-up bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:${s.cover||'linear-gradient(135deg,#e8c4c4,#c5b3d9)'}">${s.emoji||'📖'}</div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="font-bold text-sm text-white truncate">${s.title}</h3>
+                  <span class="text-xs bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded-full flex-shrink-0">✅ 上架中</span>
+                  <span class="text-xs bg-white/10 text-white/40 px-1.5 py-0.5 rounded-full flex-shrink-0">${s.cat==='love'?'💕 愛情':s.cat==='history'?'📜 歷史':'🔮 懸疑'}</span>
+                </div>
+                <p class="text-xs text-white/30 mt-1">上架日期：${ts} · 👁 ${s.views||0} 閱讀</p>
+              </div>
+              <div class="flex gap-2 flex-shrink-0">
+                <button onclick="unpublishStory('${s.id}')" class="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 text-xs hover:bg-amber-500/30 transition font-medium">📦 下架</button>
+                <button onclick="deletePublishedStory('${s.id}')" class="px-3 py-1.5 rounded-xl bg-red-500/20 text-red-300 text-xs hover:bg-red-500/30 transition font-medium">🗑️ 刪除</button>
+              </div>
+            </div>`;
+        });
+
+        const builtInDocs = builtIn.map(s => `
+          <div class="fade-up bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3 opacity-60">
+            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:${s.cover}">${s.emoji}</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="font-bold text-sm text-white truncate">${s.title}</h3>
+                <span class="text-xs bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded-full flex-shrink-0">✅ 上架中</span>
+                <span class="text-xs bg-starry-glow/20 text-starry-glow px-1.5 py-0.5 rounded-full flex-shrink-0">內建示範</span>
+              </div>
+              <p class="text-xs text-white/30 mt-1">👁 ${s.views.toLocaleString()} 閱讀</p>
+            </div>
+            <span class="text-xs text-white/25 flex-shrink-0">無法修改</span>
+          </div>`);
+
+        list.innerHTML = [...firebaseDocs, ...builtInDocs].join('');
+        lucide.createIcons();
+      } catch(e) {
+        console.error(e);
+        list.innerHTML = `<div class="text-center py-8 text-red-400 text-sm">載入失敗，請確認 Firestore 索引已建立</div>`;
+      }
+    }
+
+    // ============ CATEGORY FILTER ============
+    function filterCat(cat) {
+      currentCat = cat;
+      document.querySelectorAll('.cat-pill').forEach(b => {
+        const isActive = b.dataset.cat === cat;
+        b.className = `cat-pill px-5 py-2 rounded-full text-sm font-medium transition ${isActive ? 'bg-morandi-pink/30 border border-morandi-pink/40 text-morandi-blush' : 'bg-white/5 border border-white/10 text-white/60'}`;
+      });
+      renderHome();
+    }
+
+    // ============ NOTIFICATION SYSTEM (Firebase Realtime) ============
+    let notifications = [];
+    let notifPanelOpen = false;
+
+    async function publishNotification() {
+      const title = document.getElementById('notifTitle').value.trim();
+      const content = document.getElementById('notifContent').value.trim();
+      const level = document.querySelector('input[name="notifLevel"]:checked').value;
+      const showBanner = document.getElementById('notifBanner').checked;
+      if (!title || !content) { showToast('請填寫通知標題和內容', '#d4a5a5'); return; }
+      try {
+        await db.collection('notifications').add({
+          title, content, level, showBanner,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          active: true
+        });
+        showToast('通知已發布 📣', '#b8e0d2');
+        document.getElementById('notifTitle').value = '';
+        document.getElementById('notifContent').value = '';
+      } catch(e) {
+        console.error(e);
+        showToast('發布失敗，請稍後再試', '#d4a5a5');
+      }
+    }
+
+    async function deleteNotif(id) {
+      try {
+        await db.collection('notifications').doc(id).delete();
+        showToast('通知已刪除', '#4a6fa5');
+      } catch(e) { showToast('刪除失敗', '#d4a5a5'); }
+    }
+
+    function showAnnouncementBanner(notif) {
+      const banner = document.getElementById('announcementBanner');
+      const isUrgent = notif.level === 'urgent';
+      banner.className = isUrgent ? 'banner-urgent' : 'banner-normal';
+      const ts = notif.createdAt?.toDate ? notif.createdAt.toDate().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}) : '';
+      banner.innerHTML = `
+        <div class="max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+          <div class="banner-marquee flex-1 min-w-0">
+            <span class="banner-icon-pulse text-base flex-shrink-0">${isUrgent ? '🚨' : '📢'}</span>
+            <span class="text-xs font-bold ${isUrgent ? 'text-red-200' : 'text-starry-glow'} flex-shrink-0 mr-1">${isUrgent ? '【緊急公告】' : '【站內通知】'}</span>
+            <span class="font-bold text-sm text-white mr-2">${notif.title}</span>
+            <span class="text-sm text-white/70">${notif.content}</span>
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <span class="text-xs text-white/40 hidden sm:block">${ts}</span>
+            <button onclick="closeBanner()" class="w-6 h-6 rounded-full hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition text-xs">✕</button>
+          </div>
+        </div>`;
+      banner.classList.remove('hidden');
+    }
+
+    function closeBanner() {
+      const banner = document.getElementById('announcementBanner');
+      banner.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+      banner.style.transform = 'translateY(-100%)';
+      banner.style.opacity = '0';
+      setTimeout(() => { banner.classList.add('hidden'); banner.style.transform = ''; banner.style.opacity = ''; }, 300);
+    }
+
+    function ringBell() {
+      const icon = document.getElementById('bellIcon');
+      icon.classList.add('bell-ring');
+      setTimeout(() => icon.classList.remove('bell-ring'), 600);
+    }
+
+    function updateBellBadge() {
+      const unread = notifications.filter(n => !n.read).length;
+      const badge = document.getElementById('bellBadge');
+      const countEl = document.getElementById('notifUnreadCount');
+      if (unread > 0) {
+        badge.textContent = unread > 9 ? '9+' : unread;
+        badge.classList.remove('hidden');
+        countEl.textContent = unread;
+        countEl.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+        countEl.classList.add('hidden');
+      }
+    }
+
+    function toggleNotifPanel() {
+      const panel = document.getElementById('notifPanel');
+      notifPanelOpen = !notifPanelOpen;
+      if (notifPanelOpen) { panel.classList.add('open'); renderNotifList(); }
+      else { panel.classList.remove('open'); }
+    }
+
+    function closeNotifPanel() {
+      document.getElementById('notifPanel').classList.remove('open');
+      notifPanelOpen = false;
+    }
+
+    function markAllRead() {
+      notifications.forEach(n => n.read = true);
+      updateBellBadge(); renderNotifList();
+    }
+
+    function markOneRead(id) {
+      const n = notifications.find(x => x.id === id);
+      if (n) { n.read = true; updateBellBadge(); renderNotifList(); }
+    }
+
+    function renderNotifList() {
+      const list = document.getElementById('notifList');
+      if (notifications.length === 0) {
+        list.innerHTML = `<div class="text-center py-12 text-white/30"><div class="text-3xl mb-2">🌙</div><p class="text-sm">目前沒有任何通知</p></div>`;
+        return;
+      }
+      list.innerHTML = notifications.map(n => {
+        const ts = n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+        return `
+          <div class="notif-item px-5 py-4 border-b border-white/5 cursor-pointer ${n.read ? '' : (n.level==='urgent' ? 'urgent-unread' : 'unread')}" onclick="markOneRead('${n.id}')">
+            <div class="flex items-start gap-3">
+              <span class="text-xl flex-shrink-0 mt-0.5">${n.level === 'urgent' ? '🚨' : '📢'}</span>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-bold text-sm ${n.read ? 'text-white/60' : 'text-white'}">${n.title}</span>
+                  ${!n.read ? `<span class="w-2 h-2 rounded-full flex-shrink-0 ${n.level==='urgent' ? 'bg-red-400' : 'bg-starry-glow'}"></span>` : ''}
+                  ${n.level==='urgent' ? '<span class="text-xs bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded-full">緊急</span>' : ''}
+                </div>
+                <p class="text-xs text-white/50 leading-relaxed">${n.content}</p>
+                <span class="text-xs text-white/25 mt-1.5 block">${ts}</span>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function renderNotifAdminList() {
+      const list = document.getElementById('notifAdminList');
+      const count = document.getElementById('notifAdminCount');
+      count.textContent = `(${notifications.length})`;
+      if (notifications.length === 0) {
+        list.innerHTML = `<div class="text-center py-8 text-white/30 text-sm">尚未發布任何通知</div>`;
+        return;
+      }
+      list.innerHTML = notifications.map(n => {
+        const ts = n.createdAt?.toDate ? n.createdAt.toDate().toLocaleString('zh-TW',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+        return `
+          <div class="fade-up bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
+            <span class="text-xl flex-shrink-0">${n.level === 'urgent' ? '🚨' : '📢'}</span>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-white truncate">${n.title}</span>
+                ${n.level==='urgent' ? '<span class="text-xs bg-red-500/20 text-red-300 px-1.5 py-0.5 rounded-full flex-shrink-0">緊急</span>' : ''}
+                ${n.showBanner ? '<span class="text-xs bg-starry-glow/20 text-starry-glow px-1.5 py-0.5 rounded-full flex-shrink-0">橫幅</span>' : ''}
+              </div>
+              <p class="text-xs text-white/50 mt-0.5 truncate">${n.content}</p>
+              <span class="text-xs text-white/25">${ts}</span>
+            </div>
+            <div class="flex gap-2 flex-shrink-0">
+              <button onclick="reshowBanner('${n.id}')" class="px-3 py-1.5 rounded-xl bg-starry-light/20 text-starry-glow text-xs hover:bg-starry-light/30 transition">📢 重播</button>
+              <button onclick="deleteNotif('${n.id}')" class="px-3 py-1.5 rounded-xl bg-red-500/20 text-red-300 text-xs hover:bg-red-500/30 transition">刪除</button>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function reshowBanner(id) {
+      const n = notifications.find(x => x.id === id);
+      if (n) { showAnnouncementBanner(n); showToast('橫幅已重新顯示', '#b8e0d2'); }
+    }
+
+    function updateLevelUI() {
+      const level = document.querySelector('input[name="notifLevel"]:checked').value;
+      document.getElementById('levelNormalLabel').className = `flex items-center gap-2 cursor-pointer px-4 py-2 rounded-xl border transition ${level==='normal' ? 'border-starry-glow/50 bg-starry-glow/10' : 'border-white/15 hover:border-starry-glow/50'}`;
+      document.getElementById('levelUrgentLabel').className = `flex items-center gap-2 cursor-pointer px-4 py-2 rounded-xl border transition ${level==='urgent' ? 'border-red-400/50 bg-red-400/10' : 'border-white/15 hover:border-red-400/50'}`;
+    }
+
+    // Close panel on outside click
+    document.addEventListener('click', (e) => {
+      const panel = document.getElementById('notifPanel');
+      const bell = document.getElementById('bellBtn');
+      if (notifPanelOpen && !panel.contains(e.target) && !bell.contains(e.target)) closeNotifPanel();
+    });
+
+    // ============ ADMIN PASSWORD ============
+    const ADMIN_PASSWORD = 'admin123'; // ← 在這裡修改你的密碼
+    let adminUnlocked = false;
+
+    function openAdminModal() {
+      document.getElementById('adminPwInput').value = '';
+      document.getElementById('adminPwError').classList.add('hidden');
+      document.getElementById('adminModal').classList.add('open');
+      setTimeout(() => document.getElementById('adminPwInput').focus(), 350);
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.remove('open');
+    }
+
+    function confirmAdminPw() {
+      const input = document.getElementById('adminPwInput').value;
+      const errorEl = document.getElementById('adminPwError');
+      const box = document.getElementById('adminModalBox');
+      if (input === ADMIN_PASSWORD) {
+        adminUnlocked = true;
+        closeAdminModal();
+        navigateTo('admin');
+        showToast('歡迎回來，管理員 🛡️', '#b8e0d2');
+      } else {
+        errorEl.classList.remove('hidden');
+        document.getElementById('adminPwInput').value = '';
+        box.classList.add('shake');
+        setTimeout(() => box.classList.remove('shake'), 400);
+      }
+    }
+
+    function togglePwVisibility() {
+      const input = document.getElementById('adminPwInput');
+      const icon = document.getElementById('pwEyeIcon');
+      if (input.type === 'password') { input.type = 'text'; icon.setAttribute('data-lucide', 'eye-off'); }
+      else { input.type = 'password'; icon.setAttribute('data-lucide', 'eye'); }
+      lucide.createIcons();
+    }
+
+    // ============ i18n ============
+    function switchLang(lang) {
+      currentLang = lang;
+      document.getElementById('searchInput').placeholder = t('search_placeholder');
+      document.getElementById('heroSubtitle').textContent = t('hero_subtitle');
+      document.getElementById('bookshelfTitle').textContent = t('my_bookshelf');
+      renderHome();
+    }
+
+    // ============ SEARCH ============
+    document.getElementById('searchInput').addEventListener('input', () => renderHome());
+
+    // ============ FIREBASE: Load approved stories ============
+    async function loadFirebaseStories() {
+      try {
+        const snap = await db.collection('stories').where('approved','==',true).orderBy('createdAt','desc').get();
+        snap.forEach(doc => {
+          const data = doc.data();
+          // avoid duplicates with built-in stories
+          if (!stories.find(s => s.id === doc.id)) {
+            stories.push({
+              id: doc.id,
+              title: data.title, titleEn: data.titleEn || data.title, titleCn: data.titleCn || data.title,
+              cat: data.cat || 'love',
+              cover: data.cover || 'linear-gradient(135deg,#e8c4c4,#c5b3d9)',
+              emoji: data.emoji || '📖',
+              views: data.views || 0,
+              completions: data.completions || 0,
+              favs: data.favs || 0,
+              days: data.days || 1,
+              approved: true,
+              content: data.content || ''
+            });
+          }
+        });
+        renderHome();
+        updateConnectionStatus(true);
+      } catch(e) {
+        console.error('載入故事失敗:', e);
+        updateConnectionStatus(false);
+      }
+    }
+
+    // ============ FIREBASE: Listen to notifications in realtime ============
+    function listenToNotifications() {
+      db.collection('notifications')
+        .orderBy('createdAt', 'desc')
+        .limit(20)
+        .onSnapshot(snapshot => {
+          snapshot.docChanges().forEach(change => {
+            if (change.type === 'added') {
+              const data = change.doc.data();
+              const notif = { id: change.doc.id, ...data, read: false };
+              // Only treat as new if not already in list
+              if (!notifications.find(n => n.id === notif.id)) {
+                notifications.unshift(notif);
+                if (notifications.length > 20) notifications.pop();
+                // Show banner for new notifications
+                if (data.showBanner) showAnnouncementBanner(notif);
+                ringBell();
+              }
+            }
+            if (change.type === 'removed') {
+              const idx = notifications.findIndex(n => n.id === change.doc.id);
+              if (idx > -1) notifications.splice(idx, 1);
+            }
+          });
+          updateBellBadge();
+          renderNotifList();
+          renderNotifAdminList();
+        }, err => console.error('通知監聽失敗:', err));
+    }
+
+    // ============ INIT ============
+    createStars();
+    renderHome();
+    lucide.createIcons();
+    updateConnectionStatus(false);
+    loadFirebaseStories();
+    listenToNotifications();
+  </script>
+</body>
+</html>
