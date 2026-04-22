@@ -9,6 +9,7 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCaSojpHxA4j0dtVPC32SIF72Vv1S7JGwc",
@@ -20,6 +21,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
   <script>
@@ -355,45 +357,101 @@
 
     <!-- ===== CO-READING PAGE ===== -->
     <div class="page" id="page-coread">
-      <div class="max-w-6xl mx-auto px-4 py-8">
-        <h2 class="text-2xl font-bold text-cream-gold mb-6 flex items-center gap-2"><span>🔗</span> <span>遠端共讀房間</span></h2>
-        <div class="bg-white/5 border border-white/10 rounded-3xl p-6 mb-8">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="max-w-2xl mx-auto px-4 py-8">
+        <h2 class="text-2xl font-bold text-cream-gold mb-2 flex items-center gap-2"><span>🔗</span> 遠端共讀房間</h2>
+        <p class="text-white/40 text-sm mb-6">與朋友即時共讀同一本故事 ✨</p>
+
+        <!-- 身份設定區 -->
+        <div id="myIdentityBar" class="bg-white/5 border border-white/10 rounded-2xl p-4 mb-5 hidden">
+          <p class="text-xs text-white/40 mb-3">你的身份（點頭貼更換）</p>
+          <!-- 頭貼選擇 -->
+          <div class="flex gap-2 flex-wrap mb-3" id="avatarPicker">
+            <!-- 動態產生 -->
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-dreamy-lavender to-morandi-pink flex items-center justify-center text-xl flex-shrink-0" id="myAvatarDisplay">🌙</div>
             <div>
-              <label class="block text-sm text-white/60 mb-2">房間碼</label>
-              <div class="flex gap-2">
-                <input type="text" id="roomInput" placeholder="輸入房間碼..." class="flex-1 bg-white/10 border border-white/15 rounded-2xl px-4 py-2 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50">
-                <button onclick="joinRoom()" class="px-6 py-2 rounded-2xl bg-cream-gold/30 text-cream-gold font-medium hover:bg-cream-gold/40 transition">加入</button>
-              </div>
+              <p class="font-bold text-white text-sm" id="myNicknameDisplay">載入中...</p>
+              <p class="text-xs text-white/30">匿名身份・重新整理後會更換</p>
             </div>
-            <div>
-              <label class="block text-sm text-white/60 mb-2">我的房間碼</label>
-              <div class="flex gap-2">
-                <input type="text" id="myRoomId" readonly placeholder="點擊下方建立房間..." class="flex-1 bg-white/10 border border-white/15 rounded-2xl px-4 py-2 text-white focus:outline-none cursor-not-allowed opacity-60">
-                <button onclick="createRoom()" class="px-6 py-2 rounded-2xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold hover:opacity-90 transition">建立</button>
+            <div class="ml-auto text-xs text-white/30" id="roomInfoBar"></div>
+          </div>
+        </div>
+
+        <!-- 控制面板 -->
+        <div id="coreadControlPanel" class="space-y-4 mb-5">
+          <!-- 建立房間 -->
+          <div class="bg-white/5 border border-white/10 rounded-2xl p-4">
+            <p class="text-sm font-bold text-cream-gold mb-3">🏠 建立新房間</p>
+            <select id="coreadStorySelect" class="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-cream-gold/50 mb-3">
+              <option value="">選擇要共讀的故事...</option>
+            </select>
+            <button onclick="createRoom()" class="w-full py-3 rounded-xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold hover:opacity-90 transition text-sm">
+              建立房間
+            </button>
+          </div>
+          <!-- 分隔線 -->
+          <div class="flex items-center gap-3">
+            <div class="flex-1 h-px bg-white/10"></div>
+            <span class="text-xs text-white/30">或</span>
+            <div class="flex-1 h-px bg-white/10"></div>
+          </div>
+          <!-- 加入房間 -->
+          <div class="bg-white/5 border border-white/10 rounded-2xl p-4">
+            <p class="text-sm font-bold text-cream-gold mb-3">🚪 加入現有房間</p>
+            <input type="text" id="roomInput" placeholder="輸入房間碼（例：ROOM-ABC123）"
+              class="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 text-sm mb-3">
+            <button onclick="joinRoom()" class="w-full py-3 rounded-xl bg-cream-gold/30 text-cream-gold font-bold hover:bg-cream-gold/40 transition text-sm">
+              加入房間
+            </button>
+          </div>
+        </div>
+
+        <!-- 房間內容 -->
+        <div id="coreadRoomPanel" class="hidden">
+          <!-- 房間 header -->
+          <div class="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 mb-4">
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <p class="font-bold text-white text-sm truncate" id="coreadStoryTitle">故事標題</p>
+                <p class="text-xs text-white/40 mt-0.5">房間碼：<span id="coreadRoomCode" class="text-cream-gold font-mono font-bold cursor-pointer" onclick="copyRoomCode()" title="點擊複製">—</span></p>
+                <p class="text-xs text-white/20 mt-0.5">點房間碼可複製分享給朋友</p>
               </div>
+              <button onclick="leaveRoom()" class="flex-shrink-0 px-3 py-1.5 rounded-xl bg-red-500/20 text-red-300 text-xs hover:bg-red-500/30 transition">離開</button>
+            </div>
+          </div>
+
+          <!-- 成員列表 -->
+          <div class="mb-4">
+            <p class="text-xs text-white/40 mb-2">房間成員</p>
+            <div id="memberList" class="flex gap-2 flex-wrap"></div>
+          </div>
+
+          <!-- 故事內容 -->
+          <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden mb-4">
+            <div id="coreadStoryContent" class="p-5 text-sm text-white/80 leading-relaxed story-text" style="min-height:300px;">
+              <p class="text-white/30">載入故事中...</p>
+            </div>
+          </div>
+
+          <!-- 聊天室 -->
+          <div class="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+            <div class="px-4 py-3 border-b border-white/10 flex items-center gap-2">
+              <span>💬</span>
+              <span class="text-sm font-bold text-cream-gold">即時討論</span>
+            </div>
+            <div id="coreadChat" class="p-4 space-y-2 overflow-y-auto" style="height:180px;"></div>
+            <div class="px-3 py-3 border-t border-white/10 flex gap-2">
+              <input type="text" id="chatInput" placeholder="說點什麼..." maxlength="100"
+                class="flex-1 bg-white/10 border border-white/15 rounded-xl px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 text-sm"
+                onkeydown="if(event.key==='Enter') sendChatMsg()">
+              <button onclick="sendChatMsg()" class="px-4 py-2 rounded-xl bg-cream-gold/30 text-cream-gold text-sm font-bold hover:bg-cream-gold/40 transition">送出</button>
             </div>
           </div>
         </div>
-        <div id="splitViewContainer" class="hidden">
-          <h3 class="text-lg font-bold text-cream-gold mb-4">📱 分屏預覽 (左=主房間 右=對方視角)</h3>
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 overflow-hidden" style="max-height:600px;">
-              <h4 class="text-sm font-bold text-morandi-pink mb-2">👤 我的視角</h4>
-              <div id="myView" class="bg-starry-deep/50 rounded-xl p-4 text-sm text-white/70 overflow-y-auto" style="height:520px;"><p>故事文字會在這裡顯示...</p></div>
-            </div>
-            <div class="bg-white/5 border border-white/10 rounded-2xl p-4 overflow-hidden" style="max-height:600px;">
-              <h4 class="text-sm font-bold text-dreamy-lavender mb-2">👥 對方視角 (實時同步)</h4>
-              <div id="remoteView" class="bg-starry-deep/50 rounded-xl p-4 text-sm text-white/70 overflow-y-auto" style="height:520px;"><p>對方的故事文字會在這裡同步顯示...</p></div>
-            </div>
-          </div>
-          <div class="mt-4 flex gap-2">
-            <button onclick="simulateScroll()" class="px-4 py-2 rounded-2xl bg-starry-light/30 text-starry-glow font-medium text-sm hover:bg-starry-light/40 transition">📜 模擬捲動同步</button>
-            <button onclick="simulateFirefly()" class="px-4 py-2 rounded-2xl bg-cream-gold/30 text-cream-gold font-medium text-sm hover:bg-cream-gold/40 transition">✨ 模擬螢火蟲游標</button>
-          </div>
-        </div>
-        <div id="roomStatus" class="mt-8 text-center text-white/40 text-sm">
-          <p>使用「建立房間」或「加入房間」開始共讀吧！</p>
+
+        <div id="roomStatus" class="mt-6 text-center text-white/30 text-sm">
+          <p>🌙 登入中，請稍候...</p>
         </div>
       </div>
     </div>
@@ -497,54 +555,305 @@
     // ============ TRANSLATIONS ============
     const translations = {
       "zh-TW": {
-        search_placeholder: "搜尋故事...", hero_subtitle: "每晚一個故事，溫柔入夢",
+        // 搜尋 & 首頁
+        search_placeholder: "搜尋故事...",
+        hero_title: "Rewrite Story",
+        hero_subtitle: "每晚一個故事，溫柔入夢",
         cat_all: "✨ 全部", cat_love: "💕 愛情", cat_history: "📜 歷史", cat_mystery: "🔮 懸疑",
-        ai_recommend: "AI 猜你喜歡", ai_badge: "K-Means 推薦", leaderboard: "動態排行榜",
-        time_decay: "時間衰減算法", all_stories: "全部故事", back: "返回",
-        my_bookshelf: "我的書櫃", empty_bookshelf: "還沒有收藏任何故事呢",
-        submit_story: "投稿故事", story_title_label: "故事標題",
+        ai_recommend: "AI 猜你喜歡", ai_badge: "K-Means 推薦",
+        leaderboard: "動態排行榜", time_decay: "時間衰減算法",
+        all_stories: "全部故事",
+        // 分類標籤
+        cat_label_love: "💕 愛情", cat_label_history: "📜 歷史", cat_label_mystery: "🔮 懸疑",
+        // 故事詳情
+        back: "← 返回",
         views: "閱讀", completions: "完讀", favorites_label: "收藏",
-        start_reading: "開始閱讀", continue_reading: "繼續閱讀", add_fav: "收藏",
-        remove_fav: "取消收藏", approve: "通過", reject: "駁回", pending: "待審核",
+        start_reading: "開始閱讀", continue_reading: "繼續閱讀",
+        add_fav: "收藏", remove_fav: "取消收藏",
+        reading_progress: "閱讀進度",
+        comments_title: "讀者迴響",
+        comment_placeholder: "分享你的想法...",
+        anon_label: "匿名留言",
+        comment_submit: "送出 ✨",
+        comment_empty: "還沒有人留言呢，你要第一個嗎？",
+        // 書櫃
+        my_bookshelf: "我的書櫃",
+        empty_bookshelf: "還沒有收藏任何故事呢",
+        // 投稿
+        submit_story: "投稿故事",
+        story_title_label: "故事標題",
+        story_title_ph: "輸入故事標題...",
+        category_label: "分類",
+        content_label: "故事內容",
+        content_ph: "開始寫你的故事...",
+        submit_btn: "🚀 送出投稿",
+        // 共讀
+        coread_title: "遠端共讀房間",
+        coread_subtitle: "與朋友即時共讀同一本故事 ✨",
+        my_identity: "你的身份（點頭貼更換）",
+        anon_identity: "匿名身份・重新整理後會更換",
+        create_room: "🏠 建立新房間",
+        select_story_ph: "選擇要共讀的故事...",
+        create_btn: "建立房間",
+        join_room: "🚪 加入現有房間",
+        room_code_ph: "輸入房間碼（例：ROOM-ABC123）",
+        join_btn: "加入房間",
+        room_members: "房間成員",
+        realtime_chat: "即時討論",
+        chat_ph: "說點什麼...",
+        chat_send: "送出",
+        leave_room: "離開",
+        click_copy: "點房間碼可複製分享給朋友",
+        room_code_label: "房間碼：",
+        loading_story: "載入故事中...",
+        logging_in: "🌙 登入中，請稍候...",
+        // 後台
+        admin_panel: "審核後台",
+        notif_section: "發布站內通知",
+        notif_title_label: "通知標題",
+        notif_title_ph: "輸入通知標題...",
+        notif_content_label: "通知內容",
+        notif_content_ph: "輸入通知內容...",
+        notif_level: "重要程度",
+        notif_normal: "🌙 一般公告",
+        notif_urgent: "🚨 緊急公告",
+        notif_banner: "頂部橫幅",
+        notif_publish: "📣 立即發布通知",
+        published_notifs: "已發布通知",
+        pending_stories: "待審核故事",
+        published_stories: "已上架書籍管理",
+        approve: "通過", reject: "駁回", pending: "待審核",
+        unpublish: "📦 下架", delete_story: "🗑️ 刪除",
+        no_pending: "目前沒有待審核的故事",
+        refresh: "重新整理",
+        // 密碼彈窗
+        admin_verify: "管理員驗證",
+        admin_pw_hint: "請輸入密碼以進入後台",
+        admin_pw_ph: "輸入管理員密碼...",
+        admin_pw_error: "❌ 密碼錯誤，請再試一次",
+        admin_pw_default: "預設密碼：",
+        cancel: "取消",
+        enter_admin: "進入後台 🛡️",
+        // Toast
         toast_fav_add: "已加入書櫃 💕", toast_fav_remove: "已從書櫃移除",
         toast_submit: "投稿成功！等待審核中 ✨", toast_approve: "已通過審核 ✅",
-        score_label: "熱度分數", reading_progress: "閱讀進度",
-        coread_title: "遠端共讀房間", room_created: "房間已建立 🔗",
-        room_joined: "已加入房間 ✨", room_error: "房間代碼不存在",
+        toast_welcome_admin: "歡迎回來，管理員 🛡️",
+        score_label: "熱度分數",
+        room_created: "房間已建立 🔗", room_joined: "已加入房間 ✨",
+        demo_badge: "✦ 示範故事",
+        on_shelf: "✅ 上架中", built_in: "內建示範", cannot_edit: "無法修改",
+        upload_date: "上架日期：",
       },
       "zh-CN": {
-        search_placeholder: "搜索故事...", hero_subtitle: "每晚一个故事，温柔入梦",
+        search_placeholder: "搜索故事...",
+        hero_title: "Rewrite Story",
+        hero_subtitle: "每晚一个故事，温柔入梦",
         cat_all: "✨ 全部", cat_love: "💕 爱情", cat_history: "📜 历史", cat_mystery: "🔮 悬疑",
-        ai_recommend: "AI 猜你喜欢", ai_badge: "K-Means 推荐", leaderboard: "动态排行榜",
-        time_decay: "时间衰减算法", all_stories: "全部故事", back: "返回",
-        my_bookshelf: "我的书柜", empty_bookshelf: "还没有收藏任何故事呢",
+        ai_recommend: "AI 猜你喜欢", ai_badge: "K-Means 推荐",
+        leaderboard: "动态排行榜", time_decay: "时间衰减算法",
+        all_stories: "全部故事",
+        cat_label_love: "💕 爱情", cat_label_history: "📜 历史", cat_label_mystery: "🔮 悬疑",
+        back: "← 返回",
         views: "阅读", completions: "完读", favorites_label: "收藏",
-        start_reading: "开始阅读", continue_reading: "继续阅读", add_fav: "收藏",
-        remove_fav: "取消收藏", approve: "通过", reject: "驳回", pending: "待审核",
+        start_reading: "开始阅读", continue_reading: "继续阅读",
+        add_fav: "收藏", remove_fav: "取消收藏",
+        reading_progress: "阅读进度",
+        comments_title: "读者回响",
+        comment_placeholder: "分享你的想法...",
+        anon_label: "匿名留言",
+        comment_submit: "送出 ✨",
+        comment_empty: "还没有人留言呢，你要第一个吗？",
+        my_bookshelf: "我的书柜",
+        empty_bookshelf: "还没有收藏任何故事呢",
+        submit_story: "投稿故事",
+        story_title_label: "故事标题",
+        story_title_ph: "输入故事标题...",
+        category_label: "分类",
+        content_label: "故事内容",
+        content_ph: "开始写你的故事...",
+        submit_btn: "🚀 提交投稿",
+        coread_title: "远端共读房间",
+        coread_subtitle: "与朋友即时共读同一本故事 ✨",
+        my_identity: "你的身份（点头像更换）",
+        anon_identity: "匿名身份・刷新后会更换",
+        create_room: "🏠 建立新房间",
+        select_story_ph: "选择要共读的故事...",
+        create_btn: "建立房间",
+        join_room: "🚪 加入现有房间",
+        room_code_ph: "输入房间码（例：ROOM-ABC123）",
+        join_btn: "加入房间",
+        room_members: "房间成员",
+        realtime_chat: "即时讨论",
+        chat_ph: "说点什么...",
+        chat_send: "送出",
+        leave_room: "离开",
+        click_copy: "点房间码可复制分享给朋友",
+        room_code_label: "房间码：",
+        loading_story: "加载故事中...",
+        logging_in: "🌙 登录中，请稍候...",
+        admin_panel: "审核后台",
+        notif_section: "发布站内通知",
+        notif_title_label: "通知标题",
+        notif_title_ph: "输入通知标题...",
+        notif_content_label: "通知内容",
+        notif_content_ph: "输入通知内容...",
+        notif_level: "重要程度",
+        notif_normal: "🌙 一般公告",
+        notif_urgent: "🚨 紧急公告",
+        notif_banner: "顶部横幅",
+        notif_publish: "📣 立即发布通知",
+        published_notifs: "已发布通知",
+        pending_stories: "待审核故事",
+        published_stories: "已上架书籍管理",
+        approve: "通过", reject: "驳回", pending: "待审核",
+        unpublish: "📦 下架", delete_story: "🗑️ 删除",
+        no_pending: "目前没有待审核的故事",
+        refresh: "刷新",
+        admin_verify: "管理员验证",
+        admin_pw_hint: "请输入密码以进入后台",
+        admin_pw_ph: "输入管理员密码...",
+        admin_pw_error: "❌ 密码错误，请再试一次",
+        admin_pw_default: "默认密码：",
+        cancel: "取消",
+        enter_admin: "进入后台 🛡️",
         toast_fav_add: "已加入书柜 💕", toast_fav_remove: "已从书柜移除",
         toast_submit: "投稿成功！等待审核中 ✨", toast_approve: "已通过审核 ✅",
-        score_label: "热度分数", reading_progress: "阅读进度",
-        coread_title: "远端共读房间", room_created: "房间已建立 🔗",
-        room_joined: "已加入房间 ✨",
+        toast_welcome_admin: "欢迎回来，管理员 🛡️",
+        score_label: "热度分数",
+        room_created: "房间已建立 🔗", room_joined: "已加入房间 ✨",
+        demo_badge: "✦ 示范故事",
+        on_shelf: "✅ 上架中", built_in: "内建示范", cannot_edit: "无法修改",
+        upload_date: "上架日期：",
       },
       "en": {
-        search_placeholder: "Search stories...", hero_subtitle: "A story every night, drift to sleep gently",
+        search_placeholder: "Search stories...",
+        hero_title: "Rewrite Story",
+        hero_subtitle: "A story every night, drift to sleep gently",
         cat_all: "✨ All", cat_love: "💕 Romance", cat_history: "📜 History", cat_mystery: "🔮 Mystery",
-        ai_recommend: "AI Picks For You", ai_badge: "K-Means", leaderboard: "Trending Leaderboard",
-        time_decay: "Time-Decay Score", all_stories: "All Stories", back: "Back",
-        my_bookshelf: "My Bookshelf", empty_bookshelf: "No favorites yet",
+        ai_recommend: "AI Picks For You", ai_badge: "K-Means",
+        leaderboard: "Trending Leaderboard", time_decay: "Time-Decay Score",
+        all_stories: "All Stories",
+        cat_label_love: "💕 Romance", cat_label_history: "📜 History", cat_label_mystery: "🔮 Mystery",
+        back: "← Back",
         views: "Views", completions: "Finished", favorites_label: "Favs",
-        start_reading: "Start Reading", continue_reading: "Continue", add_fav: "Favorite",
-        remove_fav: "Unfavorite", approve: "Approve", reject: "Reject", pending: "Pending",
+        start_reading: "Start Reading", continue_reading: "Continue",
+        add_fav: "Favorite", remove_fav: "Unfavorite",
+        reading_progress: "Progress",
+        comments_title: "Reader Comments",
+        comment_placeholder: "Share your thoughts...",
+        anon_label: "Post anonymously",
+        comment_submit: "Send ✨",
+        comment_empty: "No comments yet — be the first!",
+        my_bookshelf: "My Bookshelf",
+        empty_bookshelf: "No favorites yet",
+        submit_story: "Submit a Story",
+        story_title_label: "Story Title",
+        story_title_ph: "Enter story title...",
+        category_label: "Category",
+        content_label: "Story Content",
+        content_ph: "Start writing your story...",
+        submit_btn: "🚀 Submit",
+        coread_title: "Remote Co-Reading",
+        coread_subtitle: "Read the same story with a friend in real time ✨",
+        my_identity: "Your identity (tap avatar to change)",
+        anon_identity: "Anonymous · changes on refresh",
+        create_room: "🏠 Create a Room",
+        select_story_ph: "Select a story to read...",
+        create_btn: "Create Room",
+        join_room: "🚪 Join a Room",
+        room_code_ph: "Enter room code (e.g. ROOM-ABC123)",
+        join_btn: "Join Room",
+        room_members: "Members",
+        realtime_chat: "Live Chat",
+        chat_ph: "Say something...",
+        chat_send: "Send",
+        leave_room: "Leave",
+        click_copy: "Tap room code to copy & share",
+        room_code_label: "Room code:",
+        loading_story: "Loading story...",
+        logging_in: "🌙 Signing in, please wait...",
+        admin_panel: "Admin Panel",
+        notif_section: "Publish Announcement",
+        notif_title_label: "Title",
+        notif_title_ph: "Enter announcement title...",
+        notif_content_label: "Content",
+        notif_content_ph: "Enter announcement content...",
+        notif_level: "Priority",
+        notif_normal: "🌙 General",
+        notif_urgent: "🚨 Urgent",
+        notif_banner: "Show top banner",
+        notif_publish: "📣 Publish Now",
+        published_notifs: "Published Announcements",
+        pending_stories: "Pending Review",
+        published_stories: "Published Stories",
+        approve: "Approve", reject: "Reject", pending: "Pending",
+        unpublish: "📦 Unpublish", delete_story: "🗑️ Delete",
+        no_pending: "No stories pending review",
+        refresh: "Refresh",
+        admin_verify: "Admin Verification",
+        admin_pw_hint: "Enter password to access admin panel",
+        admin_pw_ph: "Enter admin password...",
+        admin_pw_error: "❌ Wrong password, please try again",
+        admin_pw_default: "Default password:",
+        cancel: "Cancel",
+        enter_admin: "Enter Admin 🛡️",
         toast_fav_add: "Added to bookshelf 💕", toast_fav_remove: "Removed from bookshelf",
         toast_submit: "Submitted! Awaiting review ✨", toast_approve: "Approved ✅",
-        score_label: "Score", reading_progress: "Progress",
-        coread_title: "Remote Co-Reading", room_created: "Room created 🔗",
-        room_joined: "Room joined ✨",
+        toast_welcome_admin: "Welcome back, Admin 🛡️",
+        score_label: "Score",
+        room_created: "Room created 🔗", room_joined: "Room joined ✨",
+        demo_badge: "✦ Sample Story",
+        on_shelf: "✅ Published", built_in: "Built-in sample", cannot_edit: "Read-only",
+        upload_date: "Published:",
       }
     };
 
-    function t(key) { return translations[currentLang]?.[key] || translations['zh-TW'][key] || key; }
+    function t(key) { return translations[currentLang]?.[key] ?? translations['zh-TW'][key] ?? key; }
+
+    // ============ FULL i18n APPLY ============
+    function applyI18n() {
+      // 動態更新所有帶 data-i18n 屬性的元素
+      const map = {
+        // Nav title & hero
+        'heroTitle':        'hero_title',
+        'heroSubtitle':     'hero_subtitle',
+        'bookshelfTitle':   'my_bookshelf',
+        // Search
+        'searchInput':      null, // placeholder handled separately
+        // Category pills
+        'cat-pill-all':     'cat_all',
+        'cat-pill-love':    'cat_love',
+        'cat-pill-history': 'cat_history',
+        'cat-pill-mystery': 'cat_mystery',
+      };
+      // update searchInput placeholder
+      const si = document.getElementById('searchInput');
+      if (si) si.placeholder = t('search_placeholder');
+      // update heroTitle / heroSubtitle
+      const ht = document.getElementById('heroTitle');
+      if (ht) ht.textContent = t('hero_title');
+      const hs = document.getElementById('heroSubtitle');
+      if (hs) hs.textContent = t('hero_subtitle');
+      // update bookshelf title
+      const bt = document.getElementById('bookshelfTitle');
+      if (bt) bt.textContent = t('my_bookshelf');
+      // update category pills
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        const cat = btn.dataset.cat;
+        if (cat === 'all') btn.textContent = t('cat_all');
+        else if (cat === 'love') btn.textContent = t('cat_love');
+        else if (cat === 'history') btn.textContent = t('cat_history');
+        else if (cat === 'mystery') btn.textContent = t('cat_mystery');
+      });
+      // re-render all grids so cards pick up new lang
+      renderHome();
+    }
+
+    // ============ i18n ============
+    function switchLang(lang) {
+      currentLang = lang;
+      applyI18n();
+    }
 
     function calcScore(s) {
       return ((s.views * 1) + (s.completions * 3) + (s.favs * 5)) / Math.pow(s.days + 2, 1.5);
@@ -594,63 +903,219 @@
       setTimeout(() => fly.remove(), 1000);
     }
 
-    // ============ CO-READING ============
-    function generateRoomId() { return 'ROOM-' + Math.random().toString(36).substr(2, 6).toUpperCase(); }
+    // ============ CO-READING (Firebase Realtime) ============
+    let currentUser = null;
+    let myNickname = '';
+    let myAvatar = '🌙';
+    let currentRoom = null;
+    let roomListener = null;
+    let chatListener = null;
 
-    function createRoom() {
-      currentRoom = generateRoomId();
-      document.getElementById('myRoomId').value = currentRoom;
-      document.getElementById('roomBadge').classList.remove('hidden');
-      showToast(t('room_created') + ' ' + currentRoom, '#b8e0d2');
-      document.getElementById('splitViewContainer').classList.remove('hidden');
-      document.getElementById('roomStatus').innerHTML = `<p>房間已建立 • 代碼: <strong>${currentRoom}</strong> • 邀請朋友加入吧！</p>`;
-      openStoryInSplitView(1);
+    const avatarList = ['🌙','⭐','☁️','🐳','🍓','🦋','🌻','🎀','🧚','🌊','🐱','🦊','🐰','🌸','🍀','🎵','🌈','🍭','🦄','🐬'];
+
+    function renderAvatarPicker() {
+      const picker = document.getElementById('avatarPicker');
+      picker.innerHTML = avatarList.map(a => `
+        <button onclick="selectAvatar('${a}')" class="w-9 h-9 rounded-full flex items-center justify-center text-xl transition hover:scale-110 hover:bg-white/10 ${a === myAvatar ? 'bg-white/20 ring-2 ring-cream-gold' : ''}" id="av-${a}">
+          ${a}
+        </button>`).join('');
     }
 
-    function joinRoom() {
-      const code = document.getElementById('roomInput').value.trim();
-      if (!code) { showToast('請輸入房間碼', '#d4a5a5'); return; }
-      currentRoom = code;
-      document.getElementById('roomBadge').classList.remove('hidden');
-      showToast(t('room_joined'), '#b8e0d2');
-      document.getElementById('splitViewContainer').classList.remove('hidden');
-      document.getElementById('roomStatus').innerHTML = `<p>已加入房間 • 代碼: <strong>${code}</strong></p>`;
-      updateConnectionStatus(true);
-      setTimeout(() => openStoryInSplitView(1), 500);
+    function selectAvatar(avatar) {
+      myAvatar = avatar;
+      document.getElementById('myAvatarDisplay').textContent = avatar;
+      // 更新 picker 選中狀態
+      avatarList.forEach(a => {
+        const btn = document.getElementById('av-' + a);
+        if (btn) btn.className = `w-9 h-9 rounded-full flex items-center justify-center text-xl transition hover:scale-110 hover:bg-white/10 ${a === myAvatar ? 'bg-white/20 ring-2 ring-cream-gold' : ''}`;
+      });
+      // 同步到 Firebase
+      if (currentUser) {
+        db.collection('users').doc(currentUser.uid).set({ nickname: myNickname, avatar: myAvatar }, { merge: true });
+        // 若在房間內，更新成員資料
+        if (currentRoom) {
+          db.collection('rooms').doc(currentRoom).update({
+            [`members.${currentUser.uid}.avatar`]: myAvatar
+          }).catch(() => {});
+        }
+      }
     }
 
-    function openStoryInSplitView(storyId) {
-      const story = stories.find(s => s.id === storyId);
-      if (!story) return;
-      const myView = document.getElementById('myView');
-      const remoteView = document.getElementById('remoteView');
-      myView.innerHTML = `<p class="text-white font-bold text-base mb-4">${story.title}</p><p class="text-sm leading-relaxed">${story.content.replace(/\n\n/g,'<br><br>')}</p>`;
-      remoteView.innerHTML = `<p class="text-white font-bold text-base mb-4">${story.title}</p><p class="text-sm leading-relaxed">${story.content.replace(/\n\n/g,'<br><br>')}</p>`;
-      myView.addEventListener('mousedown', (e) => {
-        createFirefly(e.clientX, e.clientY);
-        setTimeout(() => {
-          const rect = remoteView.getBoundingClientRect();
-          const fly = document.createElement('div');
-          fly.className = 'firefly';
-          fly.style.position = 'absolute'; fly.style.zIndex = '50';
-          fly.style.left = (e.clientX - rect.left) + 'px'; fly.style.top = (e.clientY - rect.top) + 'px';
-          remoteView.appendChild(fly);
-          setTimeout(() => fly.remove(), 1000);
-        }, 100);
+    // 匿名登入
+    function initAuth() {
+      auth.signInAnonymously().then(result => {
+        currentUser = result.user;
+        myNickname = getRandomNickname();
+        myAvatar = avatarList[Math.floor(Math.random() * avatarList.length)];
+        db.collection('users').doc(currentUser.uid).set({ nickname: myNickname, avatar: myAvatar }, { merge: true });
+        document.getElementById('myNicknameDisplay').textContent = myNickname;
+        document.getElementById('myAvatarDisplay').textContent = myAvatar;
+        document.getElementById('myIdentityBar').classList.remove('hidden');
+        document.getElementById('roomStatus').textContent = '選擇故事並建立房間，或輸入房間碼加入朋友的房間 🌙';
+        updateConnectionStatus(true);
+        populateStorySelect();
+        renderAvatarPicker();
+      }).catch(e => {
+        console.error('匿名登入失敗:', e);
+        document.getElementById('roomStatus').textContent = '登入失敗，請重新整理頁面';
       });
     }
 
-    function simulateScroll() {
-      const myView = document.getElementById('myView');
-      const remoteView = document.getElementById('remoteView');
-      myView.scrollTop += 100;
-      setTimeout(() => { remoteView.scrollTop += 100; }, 200);
+    function populateStorySelect() {
+      const sel = document.getElementById('coreadStorySelect');
+      const approved = stories.filter(s => s.approved);
+      sel.innerHTML = '<option value="">選擇要共讀的故事...</option>' +
+        approved.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
     }
 
-    function simulateFirefly() {
-      const myView = document.getElementById('myView');
-      const rect = myView.getBoundingClientRect();
-      createFirefly(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    async function createRoom() {
+      if (!currentUser) { showToast('請稍候，登入中...', '#d4a5a5'); return; }
+      const storyId = document.getElementById('coreadStorySelect').value;
+      if (!storyId) { showToast('請先選擇要共讀的故事', '#d4a5a5'); return; }
+      const story = stories.find(s => String(s.id) === String(storyId));
+      if (!story) { showToast('找不到故事', '#d4a5a5'); return; }
+
+      const roomId = 'ROOM-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+      try {
+        await db.collection('rooms').doc(roomId).set({
+          storyId: String(storyId),
+          storyTitle: story.title,
+          hostUid: currentUser.uid,
+          hostNickname: myNickname,
+          hostAvatar: myAvatar,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          members: { [currentUser.uid]: { nickname: myNickname, avatar: myAvatar, joinedAt: Date.now() } }
+        });
+        showToast('房間已建立！點房間碼複製分享給朋友 🔗', '#b8e0d2');
+        enterRoom(roomId, story);
+      } catch(e) {
+        console.error(e);
+        showToast('建立失敗，請稍後再試', '#d4a5a5');
+      }
+    }
+
+    async function joinRoom() {
+      if (!currentUser) { showToast('請稍候，登入中...', '#d4a5a5'); return; }
+      const code = document.getElementById('roomInput').value.trim().toUpperCase();
+      if (!code) { showToast('請輸入房間碼', '#d4a5a5'); return; }
+      try {
+        const roomDoc = await db.collection('rooms').doc(code).get();
+        if (!roomDoc.exists) { showToast('找不到此房間，請確認房間碼', '#d4a5a5'); return; }
+        const roomData = roomDoc.data();
+        await db.collection('rooms').doc(code).update({
+          [`members.${currentUser.uid}`]: { nickname: myNickname, avatar: myAvatar, joinedAt: Date.now() }
+        });
+        const story = stories.find(s => String(s.id) === String(roomData.storyId));
+        showToast(`已加入 ${roomData.hostAvatar || ''} ${roomData.hostNickname} 的房間 ✨`, '#b8e0d2');
+        enterRoom(code, story || { title: roomData.storyTitle, content: '故事內容載入中...', id: roomData.storyId });
+      } catch(e) {
+        console.error(e);
+        showToast('加入失敗，請稍後再試', '#d4a5a5');
+      }
+    }
+
+    function enterRoom(roomId, story) {
+      currentRoom = roomId;
+      document.getElementById('roomBadge').classList.remove('hidden');
+      document.getElementById('coreadControlPanel').classList.add('hidden');
+      document.getElementById('coreadRoomPanel').classList.remove('hidden');
+      document.getElementById('roomStatus').textContent = '';
+      document.getElementById('coreadRoomCode').textContent = roomId;
+      document.getElementById('coreadStoryTitle').textContent = story?.title || '共讀中';
+
+      // 載入故事內容
+      const content = story?.content || '';
+      document.getElementById('coreadStoryContent').innerHTML =
+        `<p class="font-bold text-white text-lg mb-4">${story?.title || ''}</p>` +
+        content.split('\n\n').map(p => `<p class="mb-4">${p}</p>`).join('');
+
+      // 監聽房間成員變化
+      if (roomListener) roomListener();
+      roomListener = db.collection('rooms').doc(roomId).onSnapshot(snap => {
+        if (!snap.exists) { leaveRoom(); return; }
+        const data = snap.data();
+        renderMembers(data.members || {}, data.hostUid);
+        document.getElementById('roomInfoBar').innerHTML =
+          `🏠 房主：<span class="text-cream-gold ml-1">${data.hostNickname}</span>`;
+      });
+
+      // 監聽聊天訊息
+      if (chatListener) chatListener();
+      chatListener = db.collection('rooms').doc(roomId).collection('chat')
+        .orderBy('createdAt', 'asc').limit(50)
+        .onSnapshot(snap => {
+          snap.docChanges().forEach(change => {
+            if (change.type === 'added') appendChatMsg(change.doc.data());
+          });
+        });
+    }
+
+    function renderMembers(members, hostUid) {
+      const list = document.getElementById('memberList');
+      list.innerHTML = Object.entries(members).map(([uid, m]) => `
+        <div class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
+          <span class="text-base">${m.avatar || '🌙'}</span>
+          <span class="text-xs text-white font-medium">${m.nickname || '訪客'}</span>
+          ${uid === hostUid ? '<span class="text-xs text-cream-gold">👑</span>' : ''}
+          ${uid === currentUser?.uid ? '<span class="text-xs text-starry-glow">(你)</span>' : ''}
+        </div>`).join('');
+    }
+
+    async function sendChatMsg() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text || !currentRoom) return;
+      input.value = '';
+      try {
+        await db.collection('rooms').doc(currentRoom).collection('chat').add({
+          uid: currentUser.uid,
+          nickname: myNickname,
+          avatar: myAvatar,
+          text,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      } catch(e) { showToast('傳送失敗', '#d4a5a5'); }
+    }
+
+    function appendChatMsg(data) {
+      const chat = document.getElementById('coreadChat');
+      const isMe = data.uid === currentUser?.uid;
+      const div = document.createElement('div');
+      div.className = `flex ${isMe ? 'justify-end' : 'justify-start'} gap-2 items-end`;
+      div.innerHTML = `
+        ${!isMe ? `<span class="text-lg flex-shrink-0">${data.avatar || '🌙'}</span>` : ''}
+        <div class="max-w-[75%]">
+          ${!isMe ? `<p class="text-xs text-white/30 mb-1 ml-1">${data.nickname}</p>` : ''}
+          <div class="px-3 py-2 rounded-2xl text-sm ${isMe ? 'bg-morandi-pink/30 text-white' : 'bg-white/10 text-white/80'}">
+            ${data.text}
+          </div>
+        </div>
+        ${isMe ? `<span class="text-lg flex-shrink-0">${data.avatar || myAvatar}</span>` : ''}`;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function leaveRoom() {
+      if (!currentRoom || !currentUser) return;
+      try {
+        await db.collection('rooms').doc(currentRoom).update({
+          [`members.${currentUser.uid}`]: firebase.firestore.FieldValue.delete()
+        });
+      } catch(e) {}
+      if (roomListener) { roomListener(); roomListener = null; }
+      if (chatListener) { chatListener(); chatListener = null; }
+      currentRoom = null;
+      document.getElementById('roomBadge').classList.add('hidden');
+      document.getElementById('coreadControlPanel').classList.remove('hidden');
+      document.getElementById('coreadRoomPanel').classList.add('hidden');
+      document.getElementById('roomInput').value = '';
+      document.getElementById('roomStatus').textContent = '已離開房間';
+      showToast('已離開共讀房間', '#4a6fa5');
+    }
+
+    function copyRoomCode() {
+      const code = document.getElementById('coreadRoomCode').textContent;
+      navigator.clipboard.writeText(code).then(() => showToast('房間碼已複製！', '#b8e0d2'));
     }
 
     // ============ ANONYMOUS NICKNAMES ============
@@ -670,7 +1135,7 @@
               <span class="text-4xl mb-2">${s.emoji}</span>
               <h3 class="font-bold text-base leading-tight text-white drop-shadow-lg">${getTitle()}</h3>
               <span class="text-xs mt-1 px-2 py-0.5 rounded-full bg-white/20 text-white/80">${s.cat==='love'?'💕':s.cat==='history'?'📜':'🔮'}</span>
-              ${isBuiltIn ? `<span class="text-xs mt-1.5 px-2 py-0.5 rounded-full bg-starry-glow/30 text-starry-glow font-medium">✦ 示範故事</span>` : ''}
+              ${isBuiltIn ? `<span class="text-xs mt-1.5 px-2 py-0.5 rounded-full bg-starry-glow/30 text-starry-glow font-medium">${t('demo_badge')}</span>` : ''}
             </div>
             <div class="watermark">Rewrite Story</div>
             <button onclick="event.stopPropagation();toggleFav('${s.id}')" class="absolute top-3 right-3 w-8 h-8 rounded-full ${isFav?'bg-morandi-pink text-starry-deep':'bg-black/30 text-white/70'} flex items-center justify-center transition hover:scale-110">
@@ -739,6 +1204,7 @@
       if (page === 'home') renderHome();
       if (page === 'bookshelf') renderBookshelf();
       if (page === 'admin') renderAdmin();
+      if (page === 'coread') populateStorySelect();
     }
 
     // ============ STORY DETAIL ============
@@ -760,7 +1226,7 @@
             <div class="absolute inset-0 flex items-center justify-center"><span class="text-7xl">${s.emoji}</span></div>
             <div class="watermark" style="font-size:14px">Rewrite Story</div>
           </div>
-          <h1 class="text-3xl font-bold mb-2" style="font-family:'Quicksand',sans-serif">${getTitle()} ${typeof s.id === 'number' ? '<span class="text-base font-normal text-starry-glow bg-starry-glow/20 px-2 py-0.5 rounded-full align-middle" style="font-size:0.7em">✦ 示範故事</span>' : ''}</h1>
+          <h1 class="text-3xl font-bold mb-2" style="font-family:'Quicksand',sans-serif">${getTitle()} ${typeof s.id === 'number' ? `<span class="text-base font-normal text-starry-glow bg-starry-glow/20 px-2 py-0.5 rounded-full align-middle" style="font-size:0.7em">${t('demo_badge')}</span>` : ''}</h1>
           <div class="flex items-center gap-4 text-sm text-white/50 mb-4">
             <span>👁️ ${s.views.toLocaleString()} ${t('views')}</span>
             <span>✅ ${s.completions} ${t('completions')}</span>
@@ -779,26 +1245,26 @@
             <p>${formattedContent}</p>
           </div>
           <div class="mt-10 pt-8 border-t border-white/10">
-            <h3 class="text-xl font-bold text-cream-gold mb-6 flex items-center gap-2"><span>💬</span> 讀者迴響 (${comments.length})</h3>
+            <h3 class="text-xl font-bold text-cream-gold mb-6 flex items-center gap-2"><span>💬</span> ${t('comments_title')} (${comments.length})</h3>
             <div class="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6">
-              <textarea id="commentText" placeholder="分享你的想法..." maxlength="300" class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 resize-none text-sm" rows="3"></textarea>
+              <textarea id="commentText" placeholder="${t('comment_placeholder')}" maxlength="300" class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 resize-none text-sm" rows="3"></textarea>
               <div class="flex items-center justify-between mt-3">
                 <label class="flex items-center gap-2 text-sm cursor-pointer">
                   <input type="checkbox" id="anonCheckbox" class="w-4 h-4 rounded accent-morandi-pink">
-                  <span class="text-white/60">匿名留言</span>
+                  <span class="text-white/60">${t('anon_label')}</span>
                 </label>
-                <button onclick="submitComment(${s.id})" class="px-5 py-2 rounded-xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold text-sm hover:opacity-90 transition">送出 ✨</button>
+                <button onclick="submitComment('${s.id}')" class="px-5 py-2 rounded-xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold text-sm hover:opacity-90 transition">${t('comment_submit')}</button>
               </div>
             </div>
             <div id="commentsList" class="space-y-4">
-              ${comments.length === 0 ? `<div class="text-center py-8 text-white/30"><p>還沒有人留言呢，你要第一個嗎？</p></div>` : comments.map((c, i) => `
+              ${comments.length === 0 ? `<div class="text-center py-8 text-white/30"><p>${t('comment_empty')}</p></div>` : comments.map((c, i) => `
                 <div class="fade-up bg-white/5 border border-white/10 rounded-2xl p-4" style="animation-delay:${i*60}ms">
                   <div class="flex items-start gap-3">
                     <div class="w-8 h-8 rounded-full bg-gradient-to-br from-dreamy-lavender to-morandi-pink flex items-center justify-center text-xs font-bold flex-shrink-0">${c.displayName.charAt(0)}</div>
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center gap-2">
                         <span class="${c.isAnonymous?'text-morandi-rose/80 font-medium':'text-white font-bold'} text-sm">${c.displayName}</span>
-                        ${c.isAnonymous ? '<span class="text-xs bg-morandi-rose/20 text-morandi-rose px-2 py-0.5 rounded-full">🎭 匿名</span>' : ''}
+                        ${c.isAnonymous ? '<span class="text-xs bg-morandi-rose/20 text-morandi-rose px-2 py-0.5 rounded-full">🎭</span>' : ''}
                       </div>
                       <p class="text-sm text-white/70 mt-2">${c.content}</p>
                       <span class="text-xs text-white/30 mt-2 block">${c.timestamp}</span>
@@ -1337,6 +1803,7 @@
     updateConnectionStatus(false);
     loadFirebaseStories();
     listenToNotifications();
+    initAuth();
   </script>
 </body>
 </html>
