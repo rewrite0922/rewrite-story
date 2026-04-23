@@ -907,7 +907,6 @@
     let currentUser = null;
     let myNickname = '';
     let myAvatar = '🌙';
-    let currentRoom = null;
     let roomListener = null;
     let chatListener = null;
 
@@ -1721,15 +1720,6 @@
       if (input.type === 'password') { input.type = 'text'; icon.setAttribute('data-lucide', 'eye-off'); }
       else { input.type = 'password'; icon.setAttribute('data-lucide', 'eye'); }
       lucide.createIcons();
-    }
-
-    // ============ i18n ============
-    function switchLang(lang) {
-      currentLang = lang;
-      document.getElementById('searchInput').placeholder = t('search_placeholder');
-      document.getElementById('heroSubtitle').textContent = t('hero_subtitle');
-      document.getElementById('bookshelfTitle').textContent = t('my_bookshelf');
-      renderHome();
     }
 
     // ============ SEARCH ============
