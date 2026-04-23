@@ -910,28 +910,51 @@
     let roomListener = null;
     let chatListener = null;
 
-    const avatarList = ['🌙','⭐','☁️','🐳','🍓','🦋','🌻','🎀','🧚','🌊','🐱','🦊','🐰','🌸','🍀','🎵','🌈','🍭','🦄','🐬'];
+    const avatarList = [
+      // 自然與天空
+      '🌙','⭐','☀️','🌈','☁️','❄️','🌊','🔥','🌸','🌻','🍀','🌿',
+      // 動物
+      '🐱','🐶','🦊','🐰','🐼','🐨','🦋','🐳','🦄','🐬','🦁','🐸',
+      // 食物甜點
+      '🍓','🍭','🧁','🍩','🍪','🍡',
+      // 其他可愛
+      '🎀','🧚','🎵','🌠','💎','🪄','🎭','✨','🫧','🍄'
+    ];
 
     function renderAvatarPicker() {
       const picker = document.getElementById('avatarPicker');
-      picker.innerHTML = avatarList.map(a => `
-        <button onclick="selectAvatar('${a}')" class="w-9 h-9 rounded-full flex items-center justify-center text-xl transition hover:scale-110 hover:bg-white/10 ${a === myAvatar ? 'bg-white/20 ring-2 ring-cream-gold' : ''}" id="av-${a}">
-          ${a}
-        </button>`).join('');
+      if (!picker) return;
+      // 分組標籤
+      const groups = [
+        { label: '自然', emojis: ['🌙','⭐','☀️','🌈','☁️','❄️','🌊','🔥','🌸','🌻','🍀','🌿'] },
+        { label: '動物', emojis: ['🐱','🐶','🦊','🐰','🐼','🐨','🦋','🐳','🦄','🐬','🦁','🐸'] },
+        { label: '甜點', emojis: ['🍓','🍭','🧁','🍩','🍪','🍡'] },
+        { label: '魔法', emojis: ['🎀','🧚','🎵','🌠','💎','🪄','🎭','✨','🫧','🍄'] },
+      ];
+      picker.innerHTML = groups.map(g => `
+        <div class="w-full mb-1">
+          <p class="text-xs text-white/25 mb-1">${g.label}</p>
+          <div class="flex gap-1.5 flex-wrap">
+            ${g.emojis.map(a => `
+              <button onclick="selectAvatar('${a}')" class="w-9 h-9 rounded-full flex items-center justify-center text-xl transition hover:scale-110 hover:bg-white/10 ${a === myAvatar ? 'bg-white/20 ring-2 ring-cream-gold' : ''}" id="av-${a.codePointAt(0)}">
+                ${a}
+              </button>`).join('')}
+          </div>
+        </div>`).join('');
     }
 
     function selectAvatar(avatar) {
       myAvatar = avatar;
-      document.getElementById('myAvatarDisplay').textContent = avatar;
+      localStorage.setItem('rs_avatar', avatar);
+      const disp = document.getElementById('myAvatarDisplay');
+      if (disp) disp.textContent = avatar;
       // 更新 picker 選中狀態
       avatarList.forEach(a => {
-        const btn = document.getElementById('av-' + a);
+        const btn = document.getElementById('av-' + a.codePointAt(0));
         if (btn) btn.className = `w-9 h-9 rounded-full flex items-center justify-center text-xl transition hover:scale-110 hover:bg-white/10 ${a === myAvatar ? 'bg-white/20 ring-2 ring-cream-gold' : ''}`;
       });
-      // 同步到 Firebase
       if (currentUser) {
         db.collection('users').doc(currentUser.uid).set({ nickname: myNickname, avatar: myAvatar }, { merge: true });
-        // 若在房間內，更新成員資料
         if (currentRoom) {
           db.collection('rooms').doc(currentRoom).update({
             [`members.${currentUser.uid}.avatar`]: myAvatar
@@ -940,15 +963,31 @@
       }
     }
 
-    // 匿名登入
+    // 匿名登入 — 用 localStorage 固定身份，不同裝置不同名字
     function initAuth() {
+      // 先從 localStorage 讀取已有的身份
+      const savedNickname = localStorage.getItem('rs_nickname');
+      const savedAvatar = localStorage.getItem('rs_avatar');
+
       auth.signInAnonymously().then(result => {
         currentUser = result.user;
-        myNickname = getRandomNickname();
-        myAvatar = avatarList[Math.floor(Math.random() * avatarList.length)];
+
+        // 如果有已儲存的身份就用舊的，否則產生新的
+        if (savedNickname && savedAvatar) {
+          myNickname = savedNickname;
+          myAvatar = savedAvatar;
+        } else {
+          myNickname = getRandomNickname();
+          myAvatar = avatarList[Math.floor(Math.random() * avatarList.length)];
+          localStorage.setItem('rs_nickname', myNickname);
+          localStorage.setItem('rs_avatar', myAvatar);
+        }
+
         db.collection('users').doc(currentUser.uid).set({ nickname: myNickname, avatar: myAvatar }, { merge: true });
-        document.getElementById('myNicknameDisplay').textContent = myNickname;
-        document.getElementById('myAvatarDisplay').textContent = myAvatar;
+        const nd = document.getElementById('myNicknameDisplay');
+        const ad = document.getElementById('myAvatarDisplay');
+        if (nd) nd.textContent = myNickname;
+        if (ad) ad.textContent = myAvatar;
         document.getElementById('myIdentityBar').classList.remove('hidden');
         document.getElementById('roomStatus').textContent = '選擇故事並建立房間，或輸入房間碼加入朋友的房間 🌙';
         updateConnectionStatus(true);
@@ -1259,11 +1298,11 @@
               ${comments.length === 0 ? `<div class="text-center py-8 text-white/30"><p>${t('comment_empty')}</p></div>` : comments.map((c, i) => `
                 <div class="fade-up bg-white/5 border border-white/10 rounded-2xl p-4" style="animation-delay:${i*60}ms">
                   <div class="flex items-start gap-3">
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-dreamy-lavender to-morandi-pink flex items-center justify-center text-xs font-bold flex-shrink-0">${c.displayName.charAt(0)}</div>
+                    <div class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-xl flex-shrink-0">${c.displayAvatar || c.displayName.charAt(0)}</div>
                     <div class="flex-1 min-w-0">
-                      <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-2 flex-wrap">
                         <span class="${c.isAnonymous?'text-morandi-rose/80 font-medium':'text-white font-bold'} text-sm">${c.displayName}</span>
-                        ${c.isAnonymous ? '<span class="text-xs bg-morandi-rose/20 text-morandi-rose px-2 py-0.5 rounded-full">🎭</span>' : ''}
+                        ${c.isAnonymous ? '<span class="text-xs bg-morandi-rose/20 text-morandi-rose px-2 py-0.5 rounded-full">匿名</span>' : ''}
                       </div>
                       <p class="text-sm text-white/70 mt-2">${c.content}</p>
                       <span class="text-xs text-white/30 mt-2 block">${c.timestamp}</span>
@@ -1281,11 +1320,24 @@
       const text = document.getElementById('commentText').value.trim();
       const isAnon = document.getElementById('anonCheckbox').checked;
       if (!text) { showToast('請輸入留言內容', '#d4a5a5'); return; }
-      const displayName = isAnon ? getRandomNickname() : '👤 讀者';
+
+      // 使用與共讀房間相同的身份（localStorage 固定，不會重複）
+      const savedNickname = localStorage.getItem('rs_nickname') || myNickname || getRandomNickname();
+      const savedAvatar = localStorage.getItem('rs_avatar') || myAvatar || '🌙';
+
+      const displayName = isAnon ? savedNickname : '👤 讀者';
+      const displayAvatar = isAnon ? savedAvatar : '👤';
       const timestamp = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+
       if (!storyComments[storyId]) storyComments[storyId] = [];
-      storyComments[storyId].push({ displayName, content: text, isAnonymous: isAnon, timestamp });
-      showToast(isAnon ? '匿名留言已送出 🎭' : '留言已送出 ✨', '#b8e0d2');
+      storyComments[storyId].push({
+        displayName,
+        displayAvatar,
+        content: text,
+        isAnonymous: isAnon,
+        timestamp
+      });
+      showToast(isAnon ? `${savedAvatar} 匿名留言已送出` : '留言已送出 ✨', '#b8e0d2');
       setTimeout(() => openStory(storyId), 400);
     }
 
