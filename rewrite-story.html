@@ -365,14 +365,17 @@
         <div id="myIdentityBar" class="bg-white/5 border border-white/10 rounded-2xl p-4 mb-5 hidden">
           <p class="text-xs text-white/40 mb-3">你的身份（點頭貼更換）</p>
           <!-- 頭貼選擇 -->
-          <div class="flex gap-2 flex-wrap mb-3" id="avatarPicker">
-            <!-- 動態產生 -->
-          </div>
+          <div class="flex gap-2 flex-wrap mb-3" id="avatarPicker"></div>
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-gradient-to-br from-dreamy-lavender to-morandi-pink flex items-center justify-center text-xl flex-shrink-0" id="myAvatarDisplay">🌙</div>
-            <div>
-              <p class="font-bold text-white text-sm" id="myNicknameDisplay">載入中...</p>
-              <p class="text-xs text-white/30">匿名身份・重新整理後會更換</p>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <p class="font-bold text-white text-sm" id="myNicknameDisplay">載入中...</p>
+                <button onclick="refreshNickname()" title="換個名字" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition hover:scale-110 flex-shrink-0" id="refreshNicknameBtn">
+                  <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-white/50"></i>
+                </button>
+              </div>
+              <p class="text-xs text-white/30">點 🔄 換個暱稱</p>
             </div>
             <div class="ml-auto text-xs text-white/30" id="roomInfoBar"></div>
           </div>
@@ -999,6 +1002,38 @@
       });
     }
 
+    function refreshNickname() {
+      // 產生新暱稱，避免和目前一樣
+      let newNickname;
+      do { newNickname = getRandomNickname(); } while (newNickname === myNickname);
+      myNickname = newNickname;
+      localStorage.setItem('rs_nickname', myNickname);
+
+      // 更新顯示
+      const nd = document.getElementById('myNicknameDisplay');
+      if (nd) nd.textContent = myNickname;
+
+      // 刷新動畫
+      const btn = document.getElementById('refreshNicknameBtn');
+      if (btn) {
+        btn.style.transform = 'rotate(360deg)';
+        btn.style.transition = 'transform 0.4s ease';
+        setTimeout(() => { btn.style.transform = ''; btn.style.transition = ''; }, 400);
+      }
+
+      // 同步到 Firebase
+      if (currentUser) {
+        db.collection('users').doc(currentUser.uid).set({ nickname: myNickname, avatar: myAvatar }, { merge: true });
+        if (currentRoom) {
+          db.collection('rooms').doc(currentRoom).update({
+            [`members.${currentUser.uid}.nickname`]: myNickname
+          }).catch(() => {});
+        }
+      }
+      showToast(`換成：${myAvatar} ${myNickname}`, '#b8e0d2');
+      lucide.createIcons();
+    }
+
     function populateStorySelect() {
       const sel = document.getElementById('coreadStorySelect');
       const approved = stories.filter(s => s.approved);
@@ -1157,8 +1192,30 @@
     }
 
     // ============ ANONYMOUS NICKNAMES ============
-    const anonymousNicknames = ["🌙 沉睡的貓咪","⭐ 迷路的小星星","☁️ 軟綿綿的雲朵","🐳 吐泡泡的小鯨魚","🍓 甜甜的草莓大福","🦋 翩翩飛舞的蝴蝶","🌻 向日葵的夢想","🎀 粉紅色的蝴蝶結","🧚 森林裡的精靈","🌊 輕柔的海浪聲"];
-    function getRandomNickname() { return anonymousNicknames[Math.floor(Math.random() * anonymousNicknames.length)]; }
+    const anonymousNicknames = [
+      // 原有10組
+      "🌙 沉睡的貓咪", "⭐ 迷路的小星星", "☁️ 軟綿綿的雲朵", "🐳 吐泡泡的小鯨魚",
+      "🍓 甜甜的草莓大福", "🦋 翩翩飛舞的蝴蝶", "🌻 向日葵的夢想", "🎀 粉紅色的蝴蝶結",
+      "🧚 森林裡的精靈", "🌊 輕柔的海浪聲",
+      // 新增30組
+      "🐱 踩棉花的小貓", "🦊 偷吃月餅的狐狸", "🐰 愛做夢的兔子", "🐼 滾來滾去的熊貓",
+      "🦄 彩虹獨角獸", "🐸 雨後跳跳蛙", "🦁 打呵欠的小獅子", "🐨 抱桉樹的無尾熊",
+      "🌸 飄落的櫻花瓣", "🍀 幸運的四葉草", "🌈 雨後的彩虹橋", "❄️ 飄飄的雪花精靈",
+      "🔥 跳舞的小火苗", "🌿 搖曳的嫩葉", "🍭 旋轉棒棒糖", "🧁 奶油杯子蛋糕",
+      "🍩 甜甜圈愛好者", "🍪 剛出爐的餅乾", "💎 閃閃發光的寶石", "🪄 神奇的魔法棒",
+      "🎵 哼歌的小音符", "🌠 許願的流星", "✨ 閃爍的星塵", "🫧 輕飄飄的泡泡",
+      "🍄 躲雨的小蘑菇", "🎭 神秘的面具", "🌊 深海裡的珍珠", "🌺 開心的扶桑花",
+      "🦋 夢裡的藍蝴蝶", "🐬 翻跟斗的海豚"
+    ];
+
+    let _lastNickname = '';
+    function getRandomNickname() {
+      // 過濾掉上一次的名字，避免連續重複
+      const pool = anonymousNicknames.filter(n => n !== _lastNickname);
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      _lastNickname = pick;
+      return pick;
+    }
 
     // ============ BOOK CARD ============
     function createBookCard(s, delay = 0) {
@@ -1735,7 +1792,7 @@
     });
 
     // ============ ADMIN PASSWORD ============
-    const ADMIN_PASSWORD = 'admin123'; // ← 在這裡修改你的密碼
+    const ADMIN_PASSWORD = 'rewrite922'; // ← 在這裡修改你的密碼
     let adminUnlocked = false;
 
     function openAdminModal() {
