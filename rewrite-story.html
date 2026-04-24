@@ -1302,9 +1302,63 @@
       if (page === 'coread') populateStorySelect();
     }
 
+    // ============ TRANSLATION CACHE ============
+    const translationCache = {};
+
+    async function getTranslatedContent(story) {
+      if (currentLang === 'zh-TW') return story.content;
+
+      const cacheKey = `${story.id}_${currentLang}`;
+      if (translationCache[cacheKey]) return translationCache[cacheKey];
+
+      // 查 Firebase 快取（只快取非內建故事）
+      const storyId = String(story.id);
+      const isFirebaseStory = !storyId.match(/^\d+$/);
+      if (isFirebaseStory) {
+        try {
+          const doc = await db.collection('translations').doc(cacheKey).get();
+          if (doc.exists) {
+            translationCache[cacheKey] = doc.data().content;
+            return translationCache[cacheKey];
+          }
+        } catch(e) {}
+      }
+
+      // Google 翻譯公開端點（不需 API Key）
+      const langMap = { 'en': 'en', 'zh-CN': 'zh-CN' };
+      const targetLang = langMap[currentLang];
+      if (!targetLang) return story.content;
+
+      try {
+        // 分段翻譯保留段落結構
+        const paragraphs = story.content.split('\n\n');
+        const translated = await Promise.all(paragraphs.map(async para => {
+          if (!para.trim()) return para;
+          const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-TW&tl=${targetLang}&dt=t&q=${encodeURIComponent(para)}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          // Google 翻譯回傳格式：[[["translated","original"],...]]
+          return data[0].map(chunk => chunk[0]).join('');
+        }));
+
+        const result = translated.join('\n\n');
+        translationCache[cacheKey] = result;
+
+        // 儲存到 Firebase 快取
+        if (isFirebaseStory) {
+          db.collection('translations').doc(cacheKey).set({
+            content: result, lang: currentLang, storyId
+          }).catch(() => {});
+        }
+        return result;
+      } catch(e) {
+        console.error('翻譯失敗:', e);
+        return story.content;
+      }
+    }
+
     // ============ STORY DETAIL ============
-    function openStory(id) {
-      // 統一轉成字串比對，同時相容數字 id（內建）和字串 id（Firebase）
+    async function openStory(id) {
       const s = stories.find(x => String(x.id) === String(id));
       if (!s) return;
       if (!readingProgress[s.id]) readingProgress[s.id] = 0;
@@ -1313,8 +1367,8 @@
       const isFav = favorites.has(String(s.id));
       const getTitle = () => currentLang === 'en' ? s.titleEn : (currentLang === 'zh-CN' ? s.titleCn : s.title);
       const comments = storyComments[id] || [];
-      const formattedContent = s.content.replace(/\n\n/g, '</p><p class="mt-4">');
 
+      // 先渲染骨架，顯示載入中
       document.getElementById('detailContent').innerHTML = `
         <div class="fade-up">
           <div class="aspect-[2/1] rounded-3xl overflow-hidden relative mb-6" style="background:${s.cover}">
@@ -1337,7 +1391,12 @@
             </button>
           </div>
           <div class="bg-white/5 rounded-3xl p-6 border border-white/10 leading-relaxed text-white/80 text-base story-text" id="storyText">
-            <p>${formattedContent}</p>
+            ${currentLang !== 'zh-TW' ? `
+              <div class="flex items-center gap-2 mb-4 text-sm text-white/40">
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                <span>${currentLang === 'en' ? 'Translating...' : '翻譯中...'}</span>
+              </div>` : ''}
+            <p id="storyContentBody">${s.content.replace(/\n\n/g, '</p><p class="mt-4">')}</p>
           </div>
           <div class="mt-10 pt-8 border-t border-white/10">
             <h3 class="text-xl font-bold text-cream-gold mb-6 flex items-center gap-2"><span>💬</span> ${t('comments_title')} (${comments.length})</h3>
@@ -1371,6 +1430,15 @@
         </div>`;
       navigateTo('detail');
       lucide.createIcons();
+
+      // 非繁中語言 → 非同步翻譯內文
+      if (currentLang !== 'zh-TW') {
+        const translated = await getTranslatedContent(s);
+        const body = document.getElementById('storyContentBody');
+        if (body) {
+          body.parentElement.innerHTML = `<p>${translated.replace(/\n\n/g, '</p><p class="mt-4">')}</p>`;
+        }
+      }
     }
 
     function submitComment(storyId) {
@@ -1792,7 +1860,7 @@
     });
 
     // ============ ADMIN PASSWORD ============
-    const ADMIN_PASSWORD = 'rewrite922'; // ← 在這裡修改你的密碼
+    const ADMIN_PASSWORD = 'admin123'; // ← 在這裡修改你的密碼
     let adminUnlocked = false;
 
     function openAdminModal() {
