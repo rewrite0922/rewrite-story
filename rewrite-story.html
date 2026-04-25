@@ -335,8 +335,12 @@
         <h2 class="text-2xl font-bold text-cream-gold mb-6 flex items-center gap-2"><span>✏️</span> <span>投稿故事</span></h2>
         <div class="space-y-5">
           <div>
-            <label class="block text-sm text-white/60 mb-1">故事標題</label>
-            <input type="text" id="submitTitle" placeholder="輸入故事標題..." class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50">
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-sm text-white/60">故事標題</label>
+              <span id="titleCount" class="text-xs text-white/30">0 / 30</span>
+            </div>
+            <input type="text" id="submitTitle" maxlength="30" placeholder="輸入故事標題..." oninput="updateTitleCount()"
+              class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50">
           </div>
           <div>
             <label class="block text-sm text-white/60 mb-1">分類</label>
@@ -347,8 +351,19 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm text-white/60 mb-1">故事內容</label>
-            <textarea id="submitContent" rows="8" placeholder="開始寫你的故事..." class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 resize-none"></textarea>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-sm text-white/60">故事內容</label>
+              <span id="contentCount" class="text-xs text-white/30">0 字</span>
+            </div>
+            <textarea id="submitContent" rows="8" placeholder="開始寫你的故事..." oninput="updateContentCount()"
+              class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 resize-none"></textarea>
+            <!-- 字數進度條 -->
+            <div class="mt-2 flex items-center gap-3">
+              <div class="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                <div id="contentProgressBar" class="h-full rounded-full bg-gradient-to-r from-starry-glow to-morandi-pink transition-all duration-300" style="width:0%"></div>
+              </div>
+              <span id="contentHint" class="text-xs text-white/30 flex-shrink-0">建議 300 字以上</span>
+            </div>
           </div>
           <button onclick="handleSubmit()" class="w-full py-3 rounded-2xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold text-lg hover:opacity-90 transition shadow-lg">🚀 送出投稿</button>
         </div>
@@ -1362,6 +1377,11 @@
       const s = stories.find(x => String(x.id) === String(id));
       if (!s) return;
       if (!readingProgress[s.id]) readingProgress[s.id] = 0;
+
+      // 載入 Firebase 留言（非內建故事才載入）
+      const sid = String(id);
+      const isFirebaseStory = !sid.match(/^\d+$/);
+      if (isFirebaseStory) await loadComments(id);
       if (!storyComments[id]) storyComments[id] = [];
       const progress = readingProgress[s.id];
       const isFav = favorites.has(String(s.id));
@@ -1441,12 +1461,32 @@
       }
     }
 
-    function submitComment(storyId) {
+    // ============ COMMENTS (Firebase) ============
+    async function loadComments(storyId) {
+      try {
+        const snap = await db.collection('stories').doc(String(storyId))
+          .collection('comments').orderBy('createdAt', 'asc').get();
+        if (!storyComments[storyId]) storyComments[storyId] = [];
+        storyComments[storyId] = snap.docs.map(doc => ({
+          displayName: doc.data().displayName,
+          displayAvatar: doc.data().displayAvatar || '💬',
+          content: doc.data().content,
+          isAnonymous: doc.data().isAnonymous,
+          timestamp: doc.data().createdAt?.toDate
+            ? doc.data().createdAt.toDate().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' })
+            : doc.data().timestamp || ''
+        }));
+      } catch(e) {
+        // 內建故事（數字 id）沒有 Firebase 留言，靜默處理
+        if (!storyComments[storyId]) storyComments[storyId] = [];
+      }
+    }
+
+    async function submitComment(storyId) {
       const text = document.getElementById('commentText').value.trim();
       const isAnon = document.getElementById('anonCheckbox').checked;
       if (!text) { showToast('請輸入留言內容', '#d4a5a5'); return; }
 
-      // 使用與共讀房間相同的身份（localStorage 固定，不會重複）
       const savedNickname = localStorage.getItem('rs_nickname') || myNickname || getRandomNickname();
       const savedAvatar = localStorage.getItem('rs_avatar') || myAvatar || '🌙';
 
@@ -1454,16 +1494,26 @@
       const displayAvatar = isAnon ? savedAvatar : '👤';
       const timestamp = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
 
+      // 先更新本地，讓 UI 立即回應
       if (!storyComments[storyId]) storyComments[storyId] = [];
-      storyComments[storyId].push({
-        displayName,
-        displayAvatar,
-        content: text,
-        isAnonymous: isAnon,
-        timestamp
-      });
-      showToast(isAnon ? `${savedAvatar} 匿名留言已送出` : '留言已送出 ✨', '#b8e0d2');
-      setTimeout(() => openStory(storyId), 400);
+      storyComments[storyId].push({ displayName, displayAvatar, content: text, isAnonymous: isAnon, timestamp });
+      showToast(isAnon ? `${savedAvatar} 留言已送出` : '留言已送出 ✨', '#b8e0d2');
+      setTimeout(() => openStory(storyId), 300);
+
+      // 非同步存到 Firebase（只存非內建故事）
+      const sid = String(storyId);
+      const isFirebaseStory = !sid.match(/^\d+$/);
+      if (isFirebaseStory) {
+        try {
+          await db.collection('stories').doc(sid).collection('comments').add({
+            displayName, displayAvatar, content: text,
+            isAnonymous: isAnon,
+            uid: currentUser?.uid || 'anonymous',
+            timestamp,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        } catch(e) { console.error('留言儲存失敗:', e); }
+      }
     }
 
     function startReading(id) {
@@ -1495,6 +1545,50 @@
       if (favStories.length === 0) { grid.innerHTML = ''; empty.classList.remove('hidden'); }
       else { empty.classList.add('hidden'); grid.innerHTML = favStories.map((s, i) => createBookCard(s, i * 80)).join(''); }
       lucide.createIcons();
+    }
+
+    // ============ SUBMIT CHARACTER COUNT ============
+    function updateTitleCount() {
+      const val = document.getElementById('submitTitle').value;
+      const el = document.getElementById('titleCount');
+      if (el) {
+        el.textContent = `${val.length} / 30`;
+        el.className = `text-xs ${val.length >= 28 ? 'text-red-400' : 'text-white/30'}`;
+      }
+    }
+
+    function updateContentCount() {
+      const val = document.getElementById('submitContent').value;
+      const count = val.length;
+      const countEl = document.getElementById('contentCount');
+      const barEl = document.getElementById('contentProgressBar');
+      const hintEl = document.getElementById('contentHint');
+      if (!countEl) return;
+
+      countEl.textContent = `${count.toLocaleString()} 字`;
+
+      // 進度條：目標 300 字
+      const pct = Math.min(100, (count / 300) * 100);
+      if (barEl) barEl.style.width = pct + '%';
+
+      // 顏色和提示
+      if (count === 0) {
+        countEl.className = 'text-xs text-white/30';
+        if (barEl) barEl.className = 'h-full rounded-full bg-gradient-to-r from-starry-glow to-morandi-pink transition-all duration-300';
+        if (hintEl) hintEl.textContent = '建議 300 字以上';
+      } else if (count < 100) {
+        countEl.className = 'text-xs text-red-400';
+        if (barEl) barEl.className = 'h-full rounded-full bg-red-400 transition-all duration-300';
+        if (hintEl) hintEl.textContent = `還差 ${300 - count} 字`;
+      } else if (count < 300) {
+        countEl.className = 'text-xs text-cream-gold';
+        if (barEl) barEl.className = 'h-full rounded-full bg-cream-gold transition-all duration-300';
+        if (hintEl) hintEl.textContent = `還差 ${300 - count} 字`;
+      } else {
+        countEl.className = 'text-xs text-green-400';
+        if (barEl) barEl.className = 'h-full rounded-full bg-green-400 transition-all duration-300';
+        if (hintEl) hintEl.textContent = '✓ 字數充足';
+      }
     }
 
     // ============ SUBMIT ============
