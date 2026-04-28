@@ -103,6 +103,10 @@
     .scroll-sync-indicator { position: fixed; top: 50%; right: 20px; width: 3px; height: 60px; background: rgba(168,216,234,0.3); border-radius: 2px; z-index: 100; animation: indicatorPulse 0.6s ease-in-out; }
     @keyframes indicatorPulse { 0% { background: rgba(168,216,234,0.8); } 100% { background: rgba(168,216,234,0.2); } }
 
+    /* Search history */
+    #searchHistoryPanel { animation: fadeUp 0.2s ease; }
+    .search-hist-item:hover { background: rgba(255,255,255,0.06); }
+
     /* ===== ADMIN PASSWORD MODAL ===== */
     #adminModal {
       position: fixed; inset: 0; z-index: 500;
@@ -185,12 +189,19 @@
           </div>
         </div>
         <!-- Title -->
-        <h3 class="text-center text-xl font-bold text-white mb-1" style="font-family:'Quicksand',sans-serif;">管理員驗證</h3>
-        <p class="text-center text-sm text-white/40 mb-6">請輸入密碼以進入後台</p>
-        <!-- Input -->
+        <h3 class="text-center text-xl font-bold text-white mb-1" style="font-family:'Quicksand',sans-serif;">管理員登入</h3>
+        <p class="text-center text-sm text-white/40 mb-6">請使用管理員帳號登入</p>
+        <!-- Email -->
+        <div class="mb-3">
+          <input type="email" id="adminEmailInput"
+            placeholder="管理員 Email..."
+            class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 text-sm"
+            onkeydown="if(event.key==='Enter') document.getElementById('adminPwInput').focus()">
+        </div>
+        <!-- Password -->
         <div class="pw-input-wrap mb-3">
           <input type="password" id="adminPwInput"
-            placeholder="輸入管理員密碼..."
+            placeholder="密碼..."
             class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 text-sm"
             onkeydown="if(event.key==='Enter') confirmAdminPw()">
           <button class="pw-toggle" onclick="togglePwVisibility()" id="pwToggleBtn" title="顯示/隱藏密碼">
@@ -198,14 +209,17 @@
           </button>
         </div>
         <!-- Error msg -->
-        <p id="adminPwError" class="text-red-400 text-xs text-center mb-4 hidden">❌ 密碼錯誤，請再試一次</p>
-        <!-- Hint -->
-        <p class="text-white/25 text-xs text-center mb-5">預設密碼：<span class="text-white/40 font-mono">admin123</span>　（可在程式碼中修改）</p>
+        <p id="adminPwError" class="text-red-400 text-xs text-center mb-4 hidden">❌ Email 或密碼錯誤，請再試一次</p>
+        <!-- Loading -->
+        <div id="adminLoginLoading" class="hidden text-center text-sm text-white/40 mb-4 flex items-center justify-center gap-2">
+          <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+          驗證中...
+        </div>
         <!-- Buttons -->
         <div class="flex gap-3">
           <button onclick="closeAdminModal()" class="flex-1 py-3 rounded-2xl bg-white/10 text-white/60 font-medium text-sm hover:bg-white/15 transition">取消</button>
-          <button onclick="confirmAdminPw()" class="flex-1 py-3 rounded-2xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold text-sm hover:opacity-90 transition">
-            進入後台 🛡️
+          <button onclick="confirmAdminPw()" id="adminLoginBtn" class="flex-1 py-3 rounded-2xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold text-sm hover:opacity-90 transition">
+            登入後台 🛡️
           </button>
         </div>
       </div>
@@ -243,9 +257,22 @@
           <div class="w-9 h-9 rounded-full bg-gradient-to-br from-cream-gold to-morandi-pink flex items-center justify-center text-starry-deep font-bold text-sm shadow-lg">RS</div>
           <span class="font-bold text-lg tracking-wide hidden sm:block" id="navTitle" style="font-family:'Quicksand',sans-serif;">Rewrite Story</span>
         </div>
-        <div class="relative flex-1 max-w-xs mx-2">
-          <input type="text" id="searchInput" class="search-box w-full bg-white/10 border border-white/15 rounded-full pl-9 pr-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:bg-white/15 focus:border-cream-gold/40" placeholder="搜尋故事...">
+        <div class="relative flex-1 max-w-xs mx-2" id="searchWrapper">
+          <input type="text" id="searchInput"
+            class="search-box w-full bg-white/10 border border-white/15 rounded-full pl-9 pr-3 py-2 text-sm text-white placeholder-white/40 focus:outline-none focus:bg-white/15 focus:border-cream-gold/40"
+            placeholder="搜尋故事..."
+            onfocus="showSearchHistory()"
+            onblur="hideSearchHistory()"
+            onkeydown="handleSearchKey(event)">
           <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40"></i>
+          <!-- 搜尋歷史下拉 -->
+          <div id="searchHistoryPanel" class="hidden absolute top-full left-0 right-0 mt-2 bg-starry-deep/95 border border-white/15 rounded-2xl overflow-hidden z-50 backdrop-blur-xl shadow-xl">
+            <div class="px-4 py-2.5 border-b border-white/10 flex items-center justify-between">
+              <span class="text-xs text-white/40 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> 最近搜尋</span>
+              <button onmousedown="clearSearchHistory()" class="text-xs text-white/30 hover:text-white/60 transition">清除</button>
+            </div>
+            <div id="searchHistoryList" class="py-1"></div>
+          </div>
         </div>
         <div class="flex items-center gap-2">
           <select id="langSwitcher" onchange="switchLang(this.value)" class="bg-white/10 border border-white/15 rounded-full px-2 py-1.5 text-xs cursor-pointer focus:outline-none">
@@ -254,6 +281,10 @@
             <option value="en">EN</option>
           </select>
           <button onclick="navigateTo('bookshelf')" class="p-2 rounded-full hover:bg-white/10 transition" title="我的書櫃"><i data-lucide="book-open" class="w-5 h-5"></i></button>
+          <button onclick="navigateTo('coupleshelf')" class="p-2 rounded-full hover:bg-white/10 transition relative" title="情侶書架">
+            <span class="text-base leading-none">💑</span>
+            <span id="coupleBadge" class="absolute -top-1 -right-1 w-4 h-4 bg-morandi-pink rounded-full text-xs flex items-center justify-center font-bold hidden text-starry-deep">♥</span>
+          </button>
           <button onclick="navigateTo('submit')" class="p-2 rounded-full hover:bg-white/10 transition" title="投稿"><i data-lucide="pen-tool" class="w-5 h-5"></i></button>
           <button onclick="navigateTo('coread')" class="p-2 rounded-full hover:bg-white/10 transition relative" title="共讀房間">
             <i data-lucide="link" class="w-5 h-5"></i>
@@ -332,19 +363,41 @@
     <!-- ===== SUBMIT PAGE ===== -->
     <div class="page" id="page-submit">
       <div class="max-w-2xl mx-auto px-4 py-8">
-        <h2 class="text-2xl font-bold text-cream-gold mb-6 flex items-center gap-2"><span>✏️</span> <span>投稿故事</span></h2>
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold text-cream-gold flex items-center gap-2"><span>✏️</span> <span>投稿故事</span></h2>
+          <!-- 草稿狀態 -->
+          <div id="draftStatus" class="text-xs text-white/30 flex items-center gap-1.5 hidden">
+            <span id="draftStatusIcon">💾</span>
+            <span id="draftStatusText">草稿已儲存</span>
+          </div>
+        </div>
+        <!-- 有草稿時顯示提示 -->
+        <div id="draftBanner" class="hidden bg-cream-gold/10 border border-cream-gold/20 rounded-2xl px-4 py-3 mb-5 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <span class="text-base">📝</span>
+            <div>
+              <p class="text-sm font-bold text-cream-gold">發現未完成的草稿</p>
+              <p class="text-xs text-white/40" id="draftTime">儲存於 ...</p>
+            </div>
+          </div>
+          <div class="flex gap-2 flex-shrink-0">
+            <button onclick="loadDraft()" class="px-3 py-1.5 rounded-xl bg-cream-gold/20 text-cream-gold text-xs font-bold hover:bg-cream-gold/30 transition">還原草稿</button>
+            <button onclick="discardDraft()" class="px-3 py-1.5 rounded-xl bg-white/10 text-white/40 text-xs hover:bg-white/15 transition">捨棄</button>
+          </div>
+        </div>
         <div class="space-y-5">
           <div>
             <div class="flex justify-between items-center mb-1">
               <label class="text-sm text-white/60">故事標題</label>
               <span id="titleCount" class="text-xs text-white/30">0 / 30</span>
             </div>
-            <input type="text" id="submitTitle" maxlength="30" placeholder="輸入故事標題..." oninput="updateTitleCount()"
+            <input type="text" id="submitTitle" maxlength="30" placeholder="輸入故事標題..."
+              oninput="updateTitleCount(); autoSaveDraft()"
               class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50">
           </div>
           <div>
             <label class="block text-sm text-white/60 mb-1">分類</label>
-            <select id="submitCat" class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-cream-gold/50">
+            <select id="submitCat" onchange="autoSaveDraft()" class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-cream-gold/50">
               <option value="love">💕 愛情</option>
               <option value="history">📜 歷史</option>
               <option value="mystery">🔮 懸疑</option>
@@ -355,9 +408,9 @@
               <label class="text-sm text-white/60">故事內容</label>
               <span id="contentCount" class="text-xs text-white/30">0 字</span>
             </div>
-            <textarea id="submitContent" rows="8" placeholder="開始寫你的故事..." oninput="updateContentCount()"
+            <textarea id="submitContent" rows="8" placeholder="開始寫你的故事..."
+              oninput="updateContentCount(); autoSaveDraft()"
               class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 resize-none"></textarea>
-            <!-- 字數進度條 -->
             <div class="mt-2 flex items-center gap-3">
               <div class="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
                 <div id="contentProgressBar" class="h-full rounded-full bg-gradient-to-r from-starry-glow to-morandi-pink transition-all duration-300" style="width:0%"></div>
@@ -366,6 +419,79 @@
             </div>
           </div>
           <button onclick="handleSubmit()" class="w-full py-3 rounded-2xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold text-lg hover:opacity-90 transition shadow-lg">🚀 送出投稿</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== COUPLE SHELF PAGE ===== -->
+    <div class="page" id="page-coupleshelf">
+      <div class="max-w-3xl mx-auto px-4 py-8">
+        <h2 class="text-2xl font-bold mb-2 flex items-center gap-2">
+          <span>💑</span>
+          <span class="bg-gradient-to-r from-morandi-pink to-dreamy-lavender bg-clip-text text-transparent">情侶共讀書架</span>
+        </h2>
+        <p class="text-white/40 text-sm mb-6">記錄每個他為你講的故事，睡著了也能補看結局 🌙</p>
+
+        <!-- 未配對狀態 -->
+        <div id="coupleUnpaired">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <!-- 建立配對 -->
+            <div class="bg-gradient-to-br from-morandi-pink/15 to-dreamy-lavender/10 border border-morandi-pink/20 rounded-3xl p-5">
+              <p class="text-sm font-bold text-morandi-pink mb-1">💌 建立情侶配對</p>
+              <p class="text-xs text-white/40 mb-4">建立專屬配對碼，分享給對方</p>
+              <button onclick="createCouplePair()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold text-sm hover:opacity-90 transition">
+                建立配對碼
+              </button>
+            </div>
+            <!-- 加入配對 -->
+            <div class="bg-white/5 border border-white/10 rounded-3xl p-5">
+              <p class="text-sm font-bold text-cream-gold mb-1">🔗 加入情侶書架</p>
+              <p class="text-xs text-white/40 mb-3">輸入對方給你的配對碼</p>
+              <div class="flex gap-2">
+                <input type="text" id="coupleCodeInput" placeholder="輸入配對碼..."
+                  class="flex-1 bg-white/10 border border-white/15 rounded-xl px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 text-sm">
+                <button onclick="joinCouplePair()" class="px-4 py-2 rounded-xl bg-cream-gold/30 text-cream-gold font-bold text-sm hover:bg-cream-gold/40 transition">加入</button>
+              </div>
+            </div>
+          </div>
+          <div class="text-center text-white/20 text-sm py-8">建立或加入配對後，你們的書架就會連結在一起 💕</div>
+        </div>
+
+        <!-- 已配對狀態 -->
+        <div id="couplePaired" class="hidden">
+          <!-- 配對資訊 -->
+          <div class="bg-gradient-to-r from-morandi-pink/15 to-dreamy-lavender/10 border border-morandi-pink/20 rounded-2xl px-5 py-4 mb-6 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="flex -space-x-2">
+                <div class="w-9 h-9 rounded-full bg-morandi-pink/40 border-2 border-starry-deep flex items-center justify-center text-base" id="myAvatarCouple">🌙</div>
+                <div class="w-9 h-9 rounded-full bg-dreamy-lavender/40 border-2 border-starry-deep flex items-center justify-center text-base" id="partnerAvatarCouple">⭐</div>
+              </div>
+              <div>
+                <p class="text-sm font-bold text-white" id="coupleStatusText">已配對</p>
+                <p class="text-xs text-white/30">配對碼：<span id="myPairCode" class="text-cream-gold font-mono cursor-pointer" onclick="copyPairCode()" title="點擊複製">—</span></p>
+              </div>
+            </div>
+            <button onclick="unpair()" class="text-xs text-white/25 hover:text-red-300 transition px-3 py-1.5 rounded-lg hover:bg-white/5">解除配對</button>
+          </div>
+
+          <!-- 分頁 tabs -->
+          <div class="flex gap-2 mb-5">
+            <button onclick="setCoupleTab('told')" id="tab-told"
+              class="flex-1 py-2 rounded-xl text-sm font-bold transition bg-morandi-pink/30 text-morandi-pink border border-morandi-pink/30">
+              📖 他講過的故事
+            </button>
+            <button onclick="setCoupleTab('unfinished')" id="tab-unfinished"
+              class="flex-1 py-2 rounded-xl text-sm font-bold transition bg-white/5 text-white/50 border border-white/10">
+              😴 睡著沒聽完
+            </button>
+            <button onclick="setCoupleTab('shared')" id="tab-shared"
+              class="flex-1 py-2 rounded-xl text-sm font-bold transition bg-white/5 text-white/50 border border-white/10">
+              💕 共同收藏
+            </button>
+          </div>
+
+          <!-- 內容區 -->
+          <div id="coupleContent" class="space-y-3"></div>
         </div>
       </div>
     </div>
@@ -1315,10 +1441,37 @@
       if (page === 'bookshelf') renderBookshelf();
       if (page === 'admin') renderAdmin();
       if (page === 'coread') populateStorySelect();
+      if (page === 'submit') { checkDraft(); updateTitleCount(); updateContentCount(); }
+      if (page === 'coupleshelf') {
+        if (myPairId) {
+          document.getElementById('coupleUnpaired').classList.add('hidden');
+          document.getElementById('couplePaired').classList.remove('hidden');
+        }
+        renderCoupleTab();
+      }
     }
 
     // ============ TRANSLATION CACHE ============
     const translationCache = {};
+
+    async function translateParagraph(text, targetLang, retries = 2) {
+      for (let i = 0; i <= retries; i++) {
+        try {
+          const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-TW&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const data = await res.json();
+          const result = data[0].map(chunk => chunk[0]).join('');
+          // 檢查翻譯結果是否有效（不是原文）
+          if (result && result.trim() && result !== text) return result;
+          return text; // 翻譯結果與原文相同，直接返回
+        } catch(e) {
+          if (i === retries) return text; // 重試完還失敗，返回原文
+          await new Promise(r => setTimeout(r, 500 * (i + 1))); // 等待後重試
+        }
+      }
+      return text;
+    }
 
     async function getTranslatedContent(story) {
       if (currentLang === 'zh-TW') return story.content;
@@ -1326,7 +1479,7 @@
       const cacheKey = `${story.id}_${currentLang}`;
       if (translationCache[cacheKey]) return translationCache[cacheKey];
 
-      // 查 Firebase 快取（只快取非內建故事）
+      // 查 Firebase 快取
       const storyId = String(story.id);
       const isFirebaseStory = !storyId.match(/^\d+$/);
       if (isFirebaseStory) {
@@ -1339,31 +1492,36 @@
         } catch(e) {}
       }
 
-      // Google 翻譯公開端點（不需 API Key）
       const langMap = { 'en': 'en', 'zh-CN': 'zh-CN' };
       const targetLang = langMap[currentLang];
       if (!targetLang) return story.content;
 
       try {
-        // 分段翻譯保留段落結構
+        // 按段落分割，過濾空行
         const paragraphs = story.content.split('\n\n');
-        const translated = await Promise.all(paragraphs.map(async para => {
-          if (!para.trim()) return para;
-          const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-TW&tl=${targetLang}&dt=t&q=${encodeURIComponent(para)}`;
-          const res = await fetch(url);
-          const data = await res.json();
-          // Google 翻譯回傳格式：[[["translated","original"],...]]
-          return data[0].map(chunk => chunk[0]).join('');
-        }));
+
+        // 每次最多 5 段並行，避免請求太多被限流
+        const translated = [];
+        for (let i = 0; i < paragraphs.length; i += 5) {
+          const batch = paragraphs.slice(i, i + 5);
+          const results = await Promise.all(
+            batch.map(para => para.trim()
+              ? translateParagraph(para, targetLang)
+              : Promise.resolve(para)
+            )
+          );
+          translated.push(...results);
+          // 批次之間稍微等一下，避免被限流
+          if (i + 5 < paragraphs.length) await new Promise(r => setTimeout(r, 200));
+        }
 
         const result = translated.join('\n\n');
         translationCache[cacheKey] = result;
 
-        // 儲存到 Firebase 快取
         if (isFirebaseStory) {
-          db.collection('translations').doc(cacheKey).set({
-            content: result, lang: currentLang, storyId
-          }).catch(() => {});
+          db.collection('translations').doc(cacheKey)
+            .set({ content: result, lang: currentLang, storyId })
+            .catch(() => {});
         }
         return result;
       } catch(e) {
@@ -1409,42 +1567,43 @@
             <button onclick="toggleFav('${s.id}');openStory('${s.id}')" class="px-5 py-3 rounded-2xl ${isFav?'bg-morandi-pink/30 text-morandi-pink':'bg-white/10 text-white/60'} font-medium hover:opacity-80 transition">
               ${isFav ? '❤️ ' + t('remove_fav') : '🤍 ' + t('add_fav')}
             </button>
+            <button onclick="addToCoupleShelf('${s.id}')" class="px-4 py-3 rounded-2xl bg-white/5 text-white/50 hover:bg-morandi-pink/20 hover:text-morandi-pink transition" title="加入情侶書架">
+              💑
+            </button>
           </div>
           <div class="bg-white/5 rounded-3xl p-6 border border-white/10 leading-relaxed text-white/80 text-base story-text" id="storyText">
             ${currentLang !== 'zh-TW' ? `
-              <div class="flex items-center gap-2 mb-4 text-sm text-white/40">
-                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
-                <span>${currentLang === 'en' ? 'Translating...' : '翻譯中...'}</span>
+              <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-2 text-sm text-white/40" id="translateStatus">
+                  <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                  <span>${currentLang === 'en' ? 'Translating...' : '翻譯中...'}</span>
+                </div>
+                <button onclick="retranslateStory('${s.id}')" class="text-xs text-white/30 hover:text-starry-glow transition flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-white/5" id="retranslateBtn">
+                  🔄 ${currentLang === 'en' ? 'Retranslate' : '重新翻譯'}
+                </button>
               </div>` : ''}
             <p id="storyContentBody">${s.content.replace(/\n\n/g, '</p><p class="mt-4">')}</p>
           </div>
           <div class="mt-10 pt-8 border-t border-white/10">
             <h3 class="text-xl font-bold text-cream-gold mb-6 flex items-center gap-2"><span>💬</span> ${t('comments_title')} (${comments.length})</h3>
-            <div class="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6">
-              <textarea id="commentText" placeholder="${t('comment_placeholder')}" maxlength="300" class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 resize-none text-sm" rows="3"></textarea>
+            <!-- 主留言框 -->
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6" id="mainCommentBox">
+              <textarea id="commentText" placeholder="${t('comment_placeholder')}" maxlength="300"
+                class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 resize-none text-sm" rows="3"></textarea>
               <div class="flex items-center justify-between mt-3">
                 <label class="flex items-center gap-2 text-sm cursor-pointer">
                   <input type="checkbox" id="anonCheckbox" class="w-4 h-4 rounded accent-morandi-pink">
                   <span class="text-white/60">${t('anon_label')}</span>
                 </label>
-                <button onclick="submitComment('${s.id}')" class="px-5 py-2 rounded-xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold text-sm hover:opacity-90 transition">${t('comment_submit')}</button>
+                <button onclick="submitComment('${s.id}', null)"
+                  class="px-5 py-2 rounded-xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold text-sm hover:opacity-90 transition">${t('comment_submit')}</button>
               </div>
             </div>
-            <div id="commentsList" class="space-y-4">
-              ${comments.length === 0 ? `<div class="text-center py-8 text-white/30"><p>${t('comment_empty')}</p></div>` : comments.map((c, i) => `
-                <div class="fade-up bg-white/5 border border-white/10 rounded-2xl p-4" style="animation-delay:${i*60}ms">
-                  <div class="flex items-start gap-3">
-                    <div class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-xl flex-shrink-0">${c.displayAvatar || c.displayName.charAt(0)}</div>
-                    <div class="flex-1 min-w-0">
-                      <div class="flex items-center gap-2 flex-wrap">
-                        <span class="${c.isAnonymous?'text-morandi-rose/80 font-medium':'text-white font-bold'} text-sm">${c.displayName}</span>
-                        ${c.isAnonymous ? '<span class="text-xs bg-morandi-rose/20 text-morandi-rose px-2 py-0.5 rounded-full">匿名</span>' : ''}
-                      </div>
-                      <p class="text-sm text-white/70 mt-2">${c.content}</p>
-                      <span class="text-xs text-white/30 mt-2 block">${c.timestamp}</span>
-                    </div>
-                  </div>
-                </div>`).join('')}
+            <!-- 留言列表 -->
+            <div id="commentsList" class="space-y-3">
+              ${comments.length === 0
+                ? `<div class="text-center py-8 text-white/30"><p>${t('comment_empty')}</p></div>`
+                : comments.map((c, i) => renderCommentHTML(c, i, s.id)).join('')}
             </div>
           </div>
         </div>`;
@@ -1455,13 +1614,158 @@
       if (currentLang !== 'zh-TW') {
         const translated = await getTranslatedContent(s);
         const body = document.getElementById('storyContentBody');
+        const status = document.getElementById('translateStatus');
         if (body) {
-          body.parentElement.innerHTML = `<p>${translated.replace(/\n\n/g, '</p><p class="mt-4">')}</p>`;
+          body.parentElement.innerHTML = `
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-xs text-starry-glow/60 flex items-center gap-1">🌐 ${currentLang === 'en' ? 'Translated' : '已翻譯'}</span>
+              <button onclick="retranslateStory('${s.id}')" class="text-xs text-white/30 hover:text-starry-glow transition flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-white/5">
+                🔄 ${currentLang === 'en' ? 'Retranslate' : '重新翻譯'}
+              </button>
+            </div>
+            <p>${translated.replace(/\n\n/g, '</p><p class="mt-4">')}</p>`;
         }
       }
     }
 
+    async function retranslateStory(id) {
+      const s = stories.find(x => String(x.id) === String(id));
+      if (!s) return;
+      // 清除快取，強制重新翻譯
+      const cacheKey = `${id}_${currentLang}`;
+      delete translationCache[cacheKey];
+      // 刪除 Firebase 快取
+      const isFirebaseStory = !String(id).match(/^\d+$/);
+      if (isFirebaseStory) {
+        db.collection('translations').doc(cacheKey).delete().catch(() => {});
+      }
+      showToast(currentLang === 'en' ? 'Retranslating...' : '重新翻譯中...', '#7ba7cc');
+      const body = document.getElementById('storyContentBody');
+      if (body) body.parentElement.innerHTML = `
+        <div class="flex items-center gap-2 mb-4 text-sm text-white/40">
+          <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+          <span>${currentLang === 'en' ? 'Retranslating...' : '重新翻譯中...'}</span>
+        </div>
+        <p id="storyContentBody">${s.content.replace(/\n\n/g, '</p><p class="mt-4">')}</p>`;
+      const translated = await getTranslatedContent(s);
+      const newBody = document.getElementById('storyContentBody');
+      if (newBody) {
+        newBody.parentElement.innerHTML = `
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs text-starry-glow/60">🌐 ${currentLang === 'en' ? 'Translated' : '已翻譯'}</span>
+            <button onclick="retranslateStory('${id}')" class="text-xs text-white/30 hover:text-starry-glow transition flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-white/5">
+              🔄 ${currentLang === 'en' ? 'Retranslate' : '重新翻譯'}
+            </button>
+          </div>
+          <p>${translated.replace(/\n\n/g, '</p><p class="mt-4">')}</p>`;
+      }
+    }
+
     // ============ COMMENTS (Firebase) ============
+
+    function renderCommentHTML(c, i, storyId) {
+      const replies = (c.replies || []).map((r, ri) => `
+        <div class="flex items-start gap-2 mt-3 pl-3 border-l-2 border-white/10">
+          <div class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-base flex-shrink-0">${r.displayAvatar || '💬'}</div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <span class="${r.isAnonymous?'text-morandi-rose/80 font-medium':'text-white font-semibold'} text-xs">${r.displayName}</span>
+              ${r.isAnonymous ? '<span class="text-xs bg-morandi-rose/20 text-morandi-rose px-1.5 py-0.5 rounded-full text-[10px]">匿名</span>' : ''}
+            </div>
+            <p class="text-xs text-white/60 mt-1">${r.content}</p>
+            <span class="text-[10px] text-white/25 mt-1 block">${r.timestamp}</span>
+          </div>
+        </div>`).join('');
+
+      return `
+        <div class="fade-up bg-white/5 border border-white/10 rounded-2xl p-4" style="animation-delay:${i*60}ms" id="comment-${i}">
+          <div class="flex items-start gap-3">
+            <div class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-xl flex-shrink-0">${c.displayAvatar || c.displayName.charAt(0)}</div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="${c.isAnonymous?'text-morandi-rose/80 font-medium':'text-white font-bold'} text-sm">${c.displayName}</span>
+                ${c.isAnonymous ? '<span class="text-xs bg-morandi-rose/20 text-morandi-rose px-2 py-0.5 rounded-full">匿名</span>' : ''}
+              </div>
+              <p class="text-sm text-white/70 mt-2">${c.content}</p>
+              <div class="flex items-center gap-3 mt-2">
+                <span class="text-xs text-white/30">${c.timestamp}</span>
+                <button onclick="showReplyBox('${storyId}', ${i})"
+                  class="text-xs text-white/30 hover:text-starry-glow transition flex items-center gap-1">
+                  💬 回覆
+                </button>
+              </div>
+              <!-- 回覆列表 -->
+              ${replies ? `<div class="mt-2 space-y-1">${replies}</div>` : ''}
+              <!-- 回覆輸入框（預設隱藏）-->
+              <div id="replyBox-${i}" class="hidden mt-3 bg-white/5 rounded-xl p-3">
+                <textarea id="replyText-${i}" placeholder="回覆 ${c.displayName}..." maxlength="200" rows="2"
+                  class="w-full bg-white/10 border border-white/15 rounded-xl px-3 py-2 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50 resize-none text-xs"></textarea>
+                <div class="flex items-center justify-between mt-2">
+                  <label class="flex items-center gap-2 text-xs cursor-pointer">
+                    <input type="checkbox" id="replyAnon-${i}" class="w-3 h-3 rounded accent-morandi-pink">
+                    <span class="text-white/50">匿名</span>
+                  </label>
+                  <div class="flex gap-2">
+                    <button onclick="hideReplyBox(${i})" class="px-3 py-1 rounded-lg bg-white/10 text-white/40 text-xs hover:bg-white/15 transition">取消</button>
+                    <button onclick="submitReply('${storyId}', ${i})"
+                      class="px-3 py-1 rounded-lg bg-morandi-pink/40 text-white text-xs font-bold hover:bg-morandi-pink/60 transition">送出</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function showReplyBox(storyId, commentIdx) {
+      // 隱藏所有其他回覆框
+      document.querySelectorAll('[id^="replyBox-"]').forEach(el => el.classList.add('hidden'));
+      const box = document.getElementById(`replyBox-${commentIdx}`);
+      if (box) {
+        box.classList.remove('hidden');
+        document.getElementById(`replyText-${commentIdx}`)?.focus();
+      }
+    }
+
+    function hideReplyBox(commentIdx) {
+      document.getElementById(`replyBox-${commentIdx}`)?.classList.add('hidden');
+    }
+
+    async function submitReply(storyId, commentIdx) {
+      const text = document.getElementById(`replyText-${commentIdx}`)?.value.trim();
+      const isAnon = document.getElementById(`replyAnon-${commentIdx}`)?.checked;
+      if (!text) { showToast('請輸入回覆內容', '#d4a5a5'); return; }
+
+      const savedNickname = localStorage.getItem('rs_nickname') || myNickname || getRandomNickname();
+      const savedAvatar = localStorage.getItem('rs_avatar') || myAvatar || '🌙';
+      const displayName = isAnon ? savedNickname : '👤 讀者';
+      const displayAvatar = isAnon ? savedAvatar : '👤';
+      const timestamp = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+
+      // 本地更新
+      if (!storyComments[storyId]) storyComments[storyId] = [];
+      if (!storyComments[storyId][commentIdx].replies) storyComments[storyId][commentIdx].replies = [];
+      storyComments[storyId][commentIdx].replies.push({ displayName, displayAvatar, content: text, isAnonymous: isAnon, timestamp });
+
+      showToast('回覆已送出 ✨', '#b8e0d2');
+      setTimeout(() => openStory(storyId), 300);
+
+      // 存到 Firebase
+      const sid = String(storyId);
+      if (!sid.match(/^\d+$/)) {
+        try {
+          const comments = storyComments[storyId];
+          const docSnap = await db.collection('stories').doc(sid).collection('comments')
+            .orderBy('createdAt', 'asc').get();
+          if (docSnap.docs[commentIdx]) {
+            const replies = docSnap.docs[commentIdx].data().replies || [];
+            replies.push({ displayName, displayAvatar, content: text, isAnonymous: isAnon, timestamp });
+            await docSnap.docs[commentIdx].ref.update({ replies });
+          }
+        } catch(e) { console.error('回覆儲存失敗:', e); }
+      }
+    }
+
     async function loadComments(storyId) {
       try {
         const snap = await db.collection('stories').doc(String(storyId))
@@ -1472,42 +1776,38 @@
           displayAvatar: doc.data().displayAvatar || '💬',
           content: doc.data().content,
           isAnonymous: doc.data().isAnonymous,
+          replies: doc.data().replies || [],
           timestamp: doc.data().createdAt?.toDate
             ? doc.data().createdAt.toDate().toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' })
             : doc.data().timestamp || ''
         }));
       } catch(e) {
-        // 內建故事（數字 id）沒有 Firebase 留言，靜默處理
         if (!storyComments[storyId]) storyComments[storyId] = [];
       }
     }
 
-    async function submitComment(storyId) {
+    async function submitComment(storyId, replyToIdx = null) {
       const text = document.getElementById('commentText').value.trim();
       const isAnon = document.getElementById('anonCheckbox').checked;
       if (!text) { showToast('請輸入留言內容', '#d4a5a5'); return; }
 
       const savedNickname = localStorage.getItem('rs_nickname') || myNickname || getRandomNickname();
       const savedAvatar = localStorage.getItem('rs_avatar') || myAvatar || '🌙';
-
       const displayName = isAnon ? savedNickname : '👤 讀者';
       const displayAvatar = isAnon ? savedAvatar : '👤';
       const timestamp = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
 
-      // 先更新本地，讓 UI 立即回應
       if (!storyComments[storyId]) storyComments[storyId] = [];
-      storyComments[storyId].push({ displayName, displayAvatar, content: text, isAnonymous: isAnon, timestamp });
+      storyComments[storyId].push({ displayName, displayAvatar, content: text, isAnonymous: isAnon, timestamp, replies: [] });
       showToast(isAnon ? `${savedAvatar} 留言已送出` : '留言已送出 ✨', '#b8e0d2');
       setTimeout(() => openStory(storyId), 300);
 
-      // 非同步存到 Firebase（只存非內建故事）
       const sid = String(storyId);
-      const isFirebaseStory = !sid.match(/^\d+$/);
-      if (isFirebaseStory) {
+      if (!sid.match(/^\d+$/)) {
         try {
           await db.collection('stories').doc(sid).collection('comments').add({
             displayName, displayAvatar, content: text,
-            isAnonymous: isAnon,
+            isAnonymous: isAnon, replies: [],
             uid: currentUser?.uid || 'anonymous',
             timestamp,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1545,6 +1845,67 @@
       if (favStories.length === 0) { grid.innerHTML = ''; empty.classList.remove('hidden'); }
       else { empty.classList.add('hidden'); grid.innerHTML = favStories.map((s, i) => createBookCard(s, i * 80)).join(''); }
       lucide.createIcons();
+    }
+
+    // ============ DRAFT AUTO-SAVE ============
+    let draftTimer = null;
+
+    function autoSaveDraft() {
+      clearTimeout(draftTimer);
+      draftTimer = setTimeout(() => {
+        const title = document.getElementById('submitTitle')?.value || '';
+        const content = document.getElementById('submitContent')?.value || '';
+        const cat = document.getElementById('submitCat')?.value || 'love';
+        if (!title && !content) return;
+        const draft = { title, content, cat, savedAt: Date.now() };
+        localStorage.setItem('rs_draft', JSON.stringify(draft));
+        // 顯示儲存狀態
+        const statusEl = document.getElementById('draftStatus');
+        const textEl = document.getElementById('draftStatusText');
+        if (statusEl) {
+          statusEl.classList.remove('hidden');
+          if (textEl) textEl.textContent = '草稿已儲存';
+          setTimeout(() => statusEl.classList.add('hidden'), 2000);
+        }
+      }, 800);
+    }
+
+    function checkDraft() {
+      const raw = localStorage.getItem('rs_draft');
+      if (!raw) return;
+      try {
+        const draft = JSON.parse(raw);
+        if (!draft.title && !draft.content) return;
+        const banner = document.getElementById('draftBanner');
+        const timeEl = document.getElementById('draftTime');
+        if (banner) banner.classList.remove('hidden');
+        if (timeEl) {
+          const d = new Date(draft.savedAt);
+          timeEl.textContent = `儲存於 ${d.toLocaleDateString('zh-TW')} ${d.toLocaleTimeString('zh-TW', { hour:'2-digit', minute:'2-digit' })}`;
+        }
+      } catch(e) {}
+    }
+
+    function loadDraft() {
+      const raw = localStorage.getItem('rs_draft');
+      if (!raw) return;
+      try {
+        const draft = JSON.parse(raw);
+        const titleEl = document.getElementById('submitTitle');
+        const contentEl = document.getElementById('submitContent');
+        const catEl = document.getElementById('submitCat');
+        if (titleEl) { titleEl.value = draft.title || ''; updateTitleCount(); }
+        if (contentEl) { contentEl.value = draft.content || ''; updateContentCount(); }
+        if (catEl && draft.cat) catEl.value = draft.cat;
+        document.getElementById('draftBanner')?.classList.add('hidden');
+        showToast('草稿已還原 📝', '#b8e0d2');
+      } catch(e) {}
+    }
+
+    function discardDraft() {
+      localStorage.removeItem('rs_draft');
+      document.getElementById('draftBanner')?.classList.add('hidden');
+      showToast('草稿已捨棄', '#4a6fa5');
     }
 
     // ============ SUBMIT CHARACTER COUNT ============
@@ -1598,26 +1959,68 @@
       const cat = document.getElementById('submitCat').value;
       if (!title || !content) { showToast('請填寫完整資料', '#d4a5a5'); return; }
 
-      const catEmojis = { love:'💌', history:'🏮', mystery:'🔮' };
-      const catCovers = {
-        love:'linear-gradient(135deg,#f2d7d5,#e8c4c4)',
-        history:'linear-gradient(135deg,#f0d9a0,#d4a5a5)',
-        mystery:'linear-gradient(135deg,#4a6fa5,#2c3e6b)'
+      // 每個分類有多組封面和圖標，隨機挑選
+      const catThemes = {
+        love: [
+          { cover: 'linear-gradient(135deg,#f2d7d5,#e8c4c4)', emoji: '💌' },
+          { cover: 'linear-gradient(135deg,#f9c6d0,#f7a8b8)', emoji: '🌸' },
+          { cover: 'linear-gradient(135deg,#fde8e8,#f5c6c6)', emoji: '🌹' },
+          { cover: 'linear-gradient(135deg,#ffd6e7,#ffb3c6)', emoji: '💕' },
+          { cover: 'linear-gradient(135deg,#e8c4c4,#c5b3d9)', emoji: '🌙' },
+          { cover: 'linear-gradient(135deg,#fce4ec,#f48fb1)', emoji: '🎀' },
+          { cover: 'linear-gradient(135deg,#f3e5f5,#ce93d8)', emoji: '🌷' },
+          { cover: 'linear-gradient(135deg,#fff9c4,#ffe082)', emoji: '🌻' },
+          { cover: 'linear-gradient(135deg,#fce4ec,#e91e63,#c2185b)', emoji: '🫶' },
+          { cover: 'linear-gradient(135deg,#e0f7fa,#b2ebf2)', emoji: '🫧' },
+          { cover: 'linear-gradient(135deg,#f8bbd0,#e91e63)', emoji: '💝' },
+          { cover: 'linear-gradient(135deg,#fff3e0,#ffcc80)', emoji: '🍓' },
+        ],
+        history: [
+          { cover: 'linear-gradient(135deg,#f0d9a0,#d4a5a5)', emoji: '🏮' },
+          { cover: 'linear-gradient(135deg,#efebe9,#bcaaa4)', emoji: '📜' },
+          { cover: 'linear-gradient(135deg,#fff8e1,#ffe082)', emoji: '🏺' },
+          { cover: 'linear-gradient(135deg,#e8f5e9,#a5d6a7)', emoji: '⚔️' },
+          { cover: 'linear-gradient(135deg,#f5e6ca,#f0d9a0)', emoji: '👘' },
+          { cover: 'linear-gradient(135deg,#fbe9e7,#ffccbc)', emoji: '🗺️' },
+          { cover: 'linear-gradient(135deg,#e3f2fd,#90caf9)', emoji: '🏯' },
+          { cover: 'linear-gradient(135deg,#f9fbe7,#e6ee9c)', emoji: '🌿' },
+        ],
+        mystery: [
+          { cover: 'linear-gradient(135deg,#4a6fa5,#2c3e6b)', emoji: '🔮' },
+          { cover: 'linear-gradient(135deg,#263238,#546e7a)', emoji: '🌑' },
+          { cover: 'linear-gradient(135deg,#1a237e,#4a148c)', emoji: '🔭' },
+          { cover: 'linear-gradient(135deg,#311b92,#6a1b9a)', emoji: '🕵️' },
+          { cover: 'linear-gradient(135deg,#212121,#424242)', emoji: '🗝️' },
+          { cover: 'linear-gradient(135deg,#1b5e20,#2e7d32)', emoji: '🌿' },
+          { cover: 'linear-gradient(135deg,#37474f,#78909c)', emoji: '🌫️' },
+          { cover: 'linear-gradient(135deg,#4a148c,#880e4f)', emoji: '🎭' },
+        ]
       };
+
+      function getRandomTheme(cat) {
+        const themes = catThemes[cat] || catThemes.love;
+        return themes[Math.floor(Math.random() * themes.length)];
+      }
+
+      const theme = getRandomTheme(cat);
 
       try {
         await db.collection('stories').add({
           title, titleEn: title, titleCn: title,
           content, cat,
-          cover: catCovers[cat] || catCovers.love,
-          emoji: catEmojis[cat] || '📖',
+          cover: theme.cover,
+          emoji: theme.emoji,
           views: 0, completions: 0, favs: 0,
           days: 0, approved: false,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
+        // 投稿成功 → 清除草稿
+        localStorage.removeItem('rs_draft');
         showToast(t('toast_submit'), '#b8e0d2');
         document.getElementById('submitTitle').value = '';
         document.getElementById('submitContent').value = '';
+        document.getElementById('draftBanner')?.classList.add('hidden');
+        updateTitleCount(); updateContentCount();
       } catch(e) {
         console.error(e);
         showToast('投稿失敗，請稍後再試', '#d4a5a5');
@@ -1953,33 +2356,263 @@
       if (notifPanelOpen && !panel.contains(e.target) && !bell.contains(e.target)) closeNotifPanel();
     });
 
-    // ============ ADMIN PASSWORD ============
-    const ADMIN_PASSWORD = 'admin123'; // ← 在這裡修改你的密碼
+    // ============ COUPLE SHELF ============
+    let myPairId = null;      // 我的配對房間 ID
+    let coupleData = null;    // Firebase 配對資料
+    let coupleListener = null;
+    let currentCoupleTab = 'told';
+
+    function generatePairCode() {
+      return 'PAIR-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+    }
+
+    async function createCouplePair() {
+      if (!currentUser) { showToast('請稍候，登入中...', '#d4a5a5'); return; }
+      const pairId = generatePairCode();
+      try {
+        await db.collection('couples').doc(pairId).set({
+          pairId,
+          user1: { uid: currentUser.uid, nickname: myNickname, avatar: myAvatar },
+          user2: null,
+          stories: [],
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        myPairId = pairId;
+        localStorage.setItem('rs_pair_id', pairId);
+        localStorage.setItem('rs_pair_uid', currentUser.uid);
+        showToast(`配對碼已建立：${pairId} 💌`, '#e8c4c4');
+        enterCoupleShelf(pairId);
+      } catch(e) { console.error(e); showToast('建立失敗', '#d4a5a5'); }
+    }
+
+    async function joinCouplePair() {
+      const code = document.getElementById('coupleCodeInput').value.trim().toUpperCase();
+      if (!code) { showToast('請輸入配對碼', '#d4a5a5'); return; }
+      if (!currentUser) { showToast('請稍候，登入中...', '#d4a5a5'); return; }
+      try {
+        const doc = await db.collection('couples').doc(code).get();
+        if (!doc.exists) { showToast('找不到此配對碼', '#d4a5a5'); return; }
+        const data = doc.data();
+        if (data.user1?.uid === currentUser.uid) { showToast('這是你自己的配對碼哦 💕', '#e8c4c4'); return; }
+        await db.collection('couples').doc(code).update({
+          user2: { uid: currentUser.uid, nickname: myNickname, avatar: myAvatar }
+        });
+        myPairId = code;
+        localStorage.setItem('rs_pair_id', code);
+        localStorage.setItem('rs_pair_uid', currentUser.uid);
+        showToast('配對成功 💑', '#b8e0d2');
+        enterCoupleShelf(code);
+      } catch(e) { console.error(e); showToast('加入失敗', '#d4a5a5'); }
+    }
+
+    function enterCoupleShelf(pairId) {
+      document.getElementById('coupleUnpaired').classList.add('hidden');
+      document.getElementById('couplePaired').classList.remove('hidden');
+      document.getElementById('myPairCode').textContent = pairId;
+      document.getElementById('coupleBadge').classList.remove('hidden');
+
+      if (coupleListener) coupleListener();
+      coupleListener = db.collection('couples').doc(pairId).onSnapshot(snap => {
+        if (!snap.exists) return;
+        coupleData = snap.data();
+        // 顯示雙方頭像和暱稱
+        const isUser1 = coupleData.user1?.uid === currentUser?.uid;
+        const me = isUser1 ? coupleData.user1 : coupleData.user2;
+        const partner = isUser1 ? coupleData.user2 : coupleData.user1;
+        document.getElementById('myAvatarCouple').textContent = me?.avatar || '🌙';
+        document.getElementById('partnerAvatarCouple').textContent = partner?.avatar || '⭐';
+        const status = partner
+          ? `${me?.nickname || '我'} 💕 ${partner?.nickname || '等待對方'}`
+          : `等待對方加入...`;
+        document.getElementById('coupleStatusText').textContent = status;
+        renderCoupleTab();
+      });
+    }
+
+    function setCoupleTab(tab) {
+      currentCoupleTab = tab;
+      ['told','unfinished','shared'].forEach(t => {
+        const btn = document.getElementById(`tab-${t}`);
+        if (t === tab) btn.className = 'flex-1 py-2 rounded-xl text-sm font-bold transition bg-morandi-pink/30 text-morandi-pink border border-morandi-pink/30';
+        else btn.className = 'flex-1 py-2 rounded-xl text-sm font-bold transition bg-white/5 text-white/50 border border-white/10';
+      });
+      renderCoupleTab();
+    }
+
+    function renderCoupleTab() {
+      if (!coupleData) return;
+      const content = document.getElementById('coupleContent');
+      const allStories = coupleData.stories || [];
+      let filtered = [];
+      if (currentCoupleTab === 'told') filtered = allStories.filter(s => s.toldDate);
+      else if (currentCoupleTab === 'unfinished') filtered = allStories.filter(s => s.fellAsleep);
+      else filtered = allStories;
+
+      if (filtered.length === 0) {
+        const emptyMsg = {
+          told: '還沒有講過任何故事呢，去找一本來講吧 📖',
+          unfinished: '每個故事都有聽完，真棒 🌟',
+          shared: '還沒有共同收藏，把喜歡的故事加進來吧 💕'
+        };
+        content.innerHTML = `<div class="text-center py-12 text-white/30 text-sm"><p>${emptyMsg[currentCoupleTab]}</p></div>`;
+        return;
+      }
+
+      content.innerHTML = filtered.map(cs => {
+        const story = stories.find(s => String(s.id) === String(cs.storyId));
+        const title = story?.title || cs.title || '未知故事';
+        const emoji = story?.emoji || '📖';
+        const cover = story?.cover || 'linear-gradient(135deg,#e8c4c4,#c5b3d9)';
+        return `
+          <div class="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:bg-white/8 transition" onclick="openStory('${cs.storyId}')">
+            <div class="w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style="background:${cover}">${emoji}</div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-bold text-white text-sm truncate">${title}</h3>
+              ${cs.toldDate ? `<p class="text-xs text-morandi-pink mt-0.5">💬 他在 ${cs.toldDate} 講給你聽</p>` : ''}
+              ${cs.fellAsleep ? `<p class="text-xs text-dreamy-lavender mt-0.5">😴 你睡著了，還沒看完結局</p>` : ''}
+              ${cs.note ? `<p class="text-xs text-white/40 mt-0.5 italic">"${cs.note}"</p>` : ''}
+            </div>
+            <div class="flex flex-col gap-1.5 flex-shrink-0">
+              ${!cs.toldDate ? `<button onclick="event.stopPropagation();markAsTold('${cs.storyId}')" class="px-3 py-1.5 rounded-xl bg-morandi-pink/20 text-morandi-pink text-xs font-medium hover:bg-morandi-pink/30 transition">✅ 講完了</button>` : ''}
+              ${!cs.fellAsleep ? `<button onclick="event.stopPropagation();markFellAsleep('${cs.storyId}')" class="px-3 py-1.5 rounded-xl bg-dreamy-lavender/20 text-dreamy-lavender text-xs font-medium hover:bg-dreamy-lavender/30 transition">😴 睡著了</button>` : `<button onclick="event.stopPropagation();unmarkFellAsleep('${cs.storyId}')" class="px-3 py-1.5 rounded-xl bg-white/10 text-white/30 text-xs hover:bg-white/15 transition">👁️ 看完了</button>`}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    async function addToCoupleShelf(storyId) {
+      if (!myPairId) { showToast('請先建立情侶配對 💑', '#e8c4c4'); navigateTo('coupleshelf'); return; }
+      const story = stories.find(s => String(s.id) === String(storyId));
+      try {
+        const doc = await db.collection('couples').doc(myPairId).get();
+        const data = doc.data();
+        const existing = (data.stories || []).find(s => String(s.storyId) === String(storyId));
+        if (existing) { showToast('已在情侶書架了 💕', '#e8c4c4'); return; }
+        await db.collection('couples').doc(myPairId).update({
+          stories: firebase.firestore.FieldValue.arrayUnion({
+            storyId: String(storyId),
+            title: story?.title || '',
+            addedAt: new Date().toLocaleDateString('zh-TW'),
+            toldDate: null,
+            fellAsleep: false,
+            note: ''
+          })
+        });
+        showToast('已加入情侶書架 💑', '#e8c4c4');
+      } catch(e) { console.error(e); showToast('加入失敗', '#d4a5a5'); }
+    }
+
+    async function markAsTold(storyId) {
+      if (!myPairId) return;
+      const today = new Date().toLocaleDateString('zh-TW', { month:'numeric', day:'numeric' });
+      try {
+        const doc = await db.collection('couples').doc(myPairId).get();
+        const stories_list = doc.data().stories || [];
+        const updated = stories_list.map(s =>
+          String(s.storyId) === String(storyId) ? { ...s, toldDate: today } : s
+        );
+        await db.collection('couples').doc(myPairId).update({ stories: updated });
+        showToast(`已記錄：${today} 講過這個故事 💬`, '#b8e0d2');
+      } catch(e) { showToast('操作失敗', '#d4a5a5'); }
+    }
+
+    async function markFellAsleep(storyId) {
+      if (!myPairId) return;
+      try {
+        const doc = await db.collection('couples').doc(myPairId).get();
+        const stories_list = doc.data().stories || [];
+        const updated = stories_list.map(s =>
+          String(s.storyId) === String(storyId) ? { ...s, fellAsleep: true } : s
+        );
+        await db.collection('couples').doc(myPairId).update({ stories: updated });
+        showToast('已記錄 😴 可以稍後補看結局', '#c5b3d9');
+      } catch(e) { showToast('操作失敗', '#d4a5a5'); }
+    }
+
+    async function unmarkFellAsleep(storyId) {
+      if (!myPairId) return;
+      try {
+        const doc = await db.collection('couples').doc(myPairId).get();
+        const stories_list = doc.data().stories || [];
+        const updated = stories_list.map(s =>
+          String(s.storyId) === String(storyId) ? { ...s, fellAsleep: false } : s
+        );
+        await db.collection('couples').doc(myPairId).update({ stories: updated });
+        showToast('結局已看完 🌟', '#b8e0d2');
+      } catch(e) { showToast('操作失敗', '#d4a5a5'); }
+    }
+
+    function copyPairCode() {
+      navigator.clipboard.writeText(myPairId || '').then(() => showToast('配對碼已複製 💌', '#e8c4c4'));
+    }
+
+    async function unpair() {
+      if (!confirm('確定要解除情侶配對嗎？書架紀錄將保留但雙方將無法繼續同步。')) return;
+      localStorage.removeItem('rs_pair_id');
+      localStorage.removeItem('rs_pair_uid');
+      myPairId = null;
+      if (coupleListener) { coupleListener(); coupleListener = null; }
+      document.getElementById('couplePaired').classList.add('hidden');
+      document.getElementById('coupleUnpaired').classList.remove('hidden');
+      document.getElementById('coupleBadge').classList.add('hidden');
+      showToast('已解除配對', '#4a6fa5');
+    }
+
+    function initCoupleShelf() {
+      const savedPairId = localStorage.getItem('rs_pair_id');
+      if (savedPairId) {
+        myPairId = savedPairId;
+        enterCoupleShelf(savedPairId);
+      }
+    }
+
+    // ============ ADMIN PASSWORD (Firebase Email Auth) ============
     let adminUnlocked = false;
 
     function openAdminModal() {
+      document.getElementById('adminEmailInput').value = '';
       document.getElementById('adminPwInput').value = '';
       document.getElementById('adminPwError').classList.add('hidden');
+      document.getElementById('adminLoginLoading').classList.add('hidden');
+      document.getElementById('adminLoginBtn').disabled = false;
       document.getElementById('adminModal').classList.add('open');
-      setTimeout(() => document.getElementById('adminPwInput').focus(), 350);
+      setTimeout(() => document.getElementById('adminEmailInput').focus(), 350);
     }
 
     function closeAdminModal() {
       document.getElementById('adminModal').classList.remove('open');
     }
 
-    function confirmAdminPw() {
-      const input = document.getElementById('adminPwInput').value;
+    async function confirmAdminPw() {
+      const email = document.getElementById('adminEmailInput').value.trim();
+      const password = document.getElementById('adminPwInput').value;
       const errorEl = document.getElementById('adminPwError');
+      const loadingEl = document.getElementById('adminLoginLoading');
+      const loginBtn = document.getElementById('adminLoginBtn');
       const box = document.getElementById('adminModalBox');
-      if (input === ADMIN_PASSWORD) {
+
+      if (!email || !password) {
+        errorEl.textContent = '❌ 請填寫 Email 和密碼';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      // 顯示載入中
+      errorEl.classList.add('hidden');
+      loadingEl.classList.remove('hidden');
+      loginBtn.disabled = true;
+
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
         adminUnlocked = true;
         closeAdminModal();
         navigateTo('admin');
         showToast('歡迎回來，管理員 🛡️', '#b8e0d2');
-      } else {
+      } catch(e) {
+        loadingEl.classList.add('hidden');
+        loginBtn.disabled = false;
+        errorEl.textContent = '❌ Email 或密碼錯誤，請再試一次';
         errorEl.classList.remove('hidden');
-        document.getElementById('adminPwInput').value = '';
         box.classList.add('shake');
         setTimeout(() => box.classList.remove('shake'), 400);
       }
@@ -1993,8 +2626,85 @@
       lucide.createIcons();
     }
 
+    // ============ SEARCH HISTORY ============
+    const MAX_HISTORY = 8;
+
+    function getSearchHistory() {
+      try { return JSON.parse(localStorage.getItem('rs_search_history') || '[]'); }
+      catch(e) { return []; }
+    }
+
+    function saveSearchTerm(term) {
+      if (!term.trim()) return;
+      let history = getSearchHistory();
+      history = history.filter(h => h !== term); // 移除重複
+      history.unshift(term);                       // 加到最前面
+      if (history.length > MAX_HISTORY) history = history.slice(0, MAX_HISTORY);
+      localStorage.setItem('rs_search_history', JSON.stringify(history));
+    }
+
+    function clearSearchHistory() {
+      localStorage.removeItem('rs_search_history');
+      document.getElementById('searchHistoryPanel').classList.add('hidden');
+      showToast('搜尋紀錄已清除', '#4a6fa5');
+    }
+
+    function showSearchHistory() {
+      const history = getSearchHistory();
+      const panel = document.getElementById('searchHistoryPanel');
+      const list = document.getElementById('searchHistoryList');
+      if (history.length === 0) { panel.classList.add('hidden'); return; }
+      list.innerHTML = history.map(term => `
+        <div class="search-hist-item flex items-center gap-3 px-4 py-2.5 cursor-pointer transition"
+          onmousedown="applySearchHistory('${term.replace(/'/g, "\\'")}')">
+          <i data-lucide="clock" class="w-3.5 h-3.5 text-white/30 flex-shrink-0"></i>
+          <span class="text-sm text-white/70 flex-1 truncate">${term}</span>
+          <i data-lucide="arrow-up-left" class="w-3.5 h-3.5 text-white/20 flex-shrink-0"></i>
+        </div>`).join('');
+      panel.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function hideSearchHistory() {
+      setTimeout(() => {
+        document.getElementById('searchHistoryPanel').classList.add('hidden');
+      }, 150);
+    }
+
+    function applySearchHistory(term) {
+      const input = document.getElementById('searchInput');
+      input.value = term;
+      renderHome();
+      document.getElementById('searchHistoryPanel').classList.add('hidden');
+    }
+
+    function handleSearchKey(e) {
+      if (e.key === 'Enter') {
+        const val = document.getElementById('searchInput').value.trim();
+        if (val) saveSearchTerm(val);
+        document.getElementById('searchHistoryPanel').classList.add('hidden');
+        document.getElementById('searchInput').blur();
+      }
+    }
+
     // ============ SEARCH ============
-    document.getElementById('searchInput').addEventListener('input', () => renderHome());
+    document.getElementById('searchInput').addEventListener('input', () => {
+      renderHome();
+      // 顯示歷史（如果輸入框是空的）
+      const val = document.getElementById('searchInput').value;
+      if (!val) showSearchHistory();
+      else document.getElementById('searchHistoryPanel').classList.add('hidden');
+    });
+
+    // 搜尋完成時存歷史（輸入停頓 800ms 後自動儲存）
+    let searchTimer = null;
+    document.getElementById('searchInput').addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      const val = document.getElementById('searchInput').value.trim();
+      if (val.length >= 2) {
+        searchTimer = setTimeout(() => saveSearchTerm(val), 800);
+      }
+    });
 
     // ============ FIREBASE: Load approved stories ============
     async function loadFirebaseStories() {
@@ -2065,6 +2775,7 @@
     loadFirebaseStories();
     listenToNotifications();
     initAuth();
+    initCoupleShelf();
   </script>
 </body>
 </html>
