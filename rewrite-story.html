@@ -680,13 +680,8 @@
     // ============ DATA ============
     const stories = [
       { id:1, title:"月光下的信", titleEn:"Letter Under Moonlight", titleCn:"月光下的信", cat:"love", cover:"linear-gradient(135deg,#e8c4c4,#c5b3d9)", emoji:"💌", views:3842, completions:1204, favs:876, days:3, approved:true, content:"在一個寧靜的夜晚，月光灑在窗台上。她打開了那封等待已久的信，字裡行間都是溫柔的思念。紙張微微泛黃，是三年前寫的。他說他會在星空下等待，直到她準備好回到他身邊。\n\n她的手指輕輕撫過每一個筆畫，彷彿能感受到他當時的溫度。窗外的月亮恰好圓滿，像是在祝福這段沉睡已久的愛情。\n\n她決定了，要寫一封回信。" },
-      { id:2, title:"星河漫遊記", titleEn:"Galaxy Wanderer", titleCn:"星河漫游记", cat:"mystery", cover:"linear-gradient(135deg,#2c3e6b,#7ba7cc)", emoji:"🌌", views:2956, completions:987, favs:654, days:5, approved:true, content:"太空船穿越了第七個星系，儀表板上的數字不停跳動。船長發現了一個不該存在的信號源，來自一個被遺忘的星球。\n\n古老的文明在那裡沉睡已久，等待著有人能解開他們的謎團。探險隊決定著陸，揭開這段宇宙的秘密。\n\n當他們踏上星球表面時，整個世界閃爍著詭異的光芒。是歡迎？還是警告？沒有人知道。" },
       { id:3, title:"長安夜雨", titleEn:"Rainy Night in Chang'an", titleCn:"长安夜雨", cat:"history", cover:"linear-gradient(135deg,#f0d9a0,#d4a5a5)", emoji:"🏮", views:4120, completions:1560, favs:1230, days:2, approved:true, content:"大唐天寶年間，長安城下起了秋雨。一位詩人走過朱雀大街，腳步踏在濕漉漉的青石板上。\n\n酒肆裡傳來絲竹之聲，舞女在紅燭下轉動，但他的心思卻飄向了遠方的故鄉。多少年沒見到家鄉的山了？多少年沒寫過思鄉的詩了？\n\n他停下腳步，雨幕中，一盞孤燈亮了起來。那光芒彷彿在呼喚什麼遺失已久的東西。" },
-      { id:4, title:"消失的第八夜", titleEn:"The Vanished 8th Night", titleCn:"消失的第八夜", cat:"mystery", cover:"linear-gradient(135deg,#4a6fa5,#2c3e6b)", emoji:"🔮", views:1876, completions:634, favs:421, days:7, approved:true, content:"日記本上清楚地記載了七個夜晚的故事，但第八頁被撕掉了。偵探翻遍了整間書房，卻找不到那張紙。\n\n只有一根紅線頭留在書脊上，像是在指向什麼。線的另一端通向書櫃後面，那裡隱藏著一個秘密房間。\n\n門被打開時，一陣冷風吹出，彷彿是時間本身在嘆息。第八夜終於要揭曉了。" },
       { id:5, title:"櫻花樹下的約定", titleEn:"Promise Under Sakura", titleCn:"樱花树下的约定", cat:"love", cover:"linear-gradient(135deg,#f2d7d5,#e8c4c4)", emoji:"🌸", views:5234, completions:2100, favs:1890, days:1, approved:true, content:"春天來了，他們回到了十年前那棵櫻花樹下。花瓣緩緩飄落，像是時光在溫柔地倒轉。\n\n她還記得他穿著淺藍色的牛仔褲，在樹下單膝跪地的樣子。十年，他們經歷了生活的風風雨雨，但約定依舊如新。\n\n新的花季，新的承諾。他們決定不再錯過彼此。" },
-      { id:6, title:"埃及豔后的密碼", titleEn:"Cleopatra's Code", titleCn:"埃及艳后的密码", cat:"history", cover:"linear-gradient(135deg,#f5e6ca,#f0d9a0)", emoji:"🏺", views:2340, completions:780, favs:560, days:10, approved:true, content:"考古學家在金字塔深處發現了一卷莎草紙，上面寫著只有克利奧帕特拉才懂的密碼。這道密碼的解開將改寫歷史。\n\n代碼被解譯後，揭示了一個古老的帝國秘密：埃及豔后其實是時間旅行者。\n\n真相太駭人聽聞了，學術界不敢公開。這個秘密被塵封在博物館的地下室，等著未來人發現。" },
-      { id:7, title:"雲端書店", titleEn:"Cloud Bookshop", titleCn:"云端书店", cat:"love", cover:"linear-gradient(135deg,#a8d8ea,#b8e0d2)", emoji:"☁️", views:1560, completions:520, favs:340, days:12, approved:true, content:"在海拔三千公尺的山上，有一間只在雲霧中出現的書店。店主是一位白髮蒼蒼的老奶奶，她說這裡是失物招領處。\n\n失落的愛情、遺失的時光、被遺忘的人，都會在這裡重新相遇。每一本書都是一段故事，每一位顧客都在尋找失去的什麼。\n\n年輕人發現自己最需要的書，竟然是寫著他和她名字的那一本。" },
-      { id:8, title:"午夜圖書館", titleEn:"Midnight Library", titleCn:"午夜图书馆", cat:"mystery", cover:"linear-gradient(135deg,#2c3e6b,#c5b3d9)", emoji:"📚", views:980, completions:320, favs:210, days:4, approved:false, content:"每到午夜十二點，圖書館的燈會自動亮起。沒有人知道是誰在看書，但書總是被翻到不同的頁面。\n\n有人說是亡靈在讀書，有人說是時間本身在訴說故事。圖書館員決定在午夜設下陷阱，要看看究竟是誰。\n\n午夜來臨時，他看到了——一個漸漸消失的身影，彷彿在時間的罅隙中苟延殘喘。" },
     ];
 
     let favorites = new Set();
@@ -695,6 +690,49 @@
     let currentCat = 'all';
     let currentRoom = null;
     let storyComments = {};
+
+    // ============ COVER THEMES ============
+    const catThemes = {
+      love: [
+        { cover: 'linear-gradient(135deg,#f2d7d5,#e8c4c4)', emoji: '💌' },
+        { cover: 'linear-gradient(135deg,#f9c6d0,#f7a8b8)', emoji: '🌸' },
+        { cover: 'linear-gradient(135deg,#fde8e8,#f5c6c6)', emoji: '🌹' },
+        { cover: 'linear-gradient(135deg,#ffd6e7,#ffb3c6)', emoji: '💕' },
+        { cover: 'linear-gradient(135deg,#e8c4c4,#c5b3d9)', emoji: '🌙' },
+        { cover: 'linear-gradient(135deg,#fce4ec,#f48fb1)', emoji: '🎀' },
+        { cover: 'linear-gradient(135deg,#f3e5f5,#ce93d8)', emoji: '🌷' },
+        { cover: 'linear-gradient(135deg,#fff9c4,#ffe082)', emoji: '🌻' },
+        { cover: 'linear-gradient(135deg,#fce4ec,#e91e63,#c2185b)', emoji: '🫶' },
+        { cover: 'linear-gradient(135deg,#e0f7fa,#b2ebf2)', emoji: '🫧' },
+        { cover: 'linear-gradient(135deg,#f8bbd0,#e91e63)', emoji: '💝' },
+        { cover: 'linear-gradient(135deg,#fff3e0,#ffcc80)', emoji: '🍓' },
+      ],
+      history: [
+        { cover: 'linear-gradient(135deg,#f0d9a0,#d4a5a5)', emoji: '🏮' },
+        { cover: 'linear-gradient(135deg,#efebe9,#bcaaa4)', emoji: '📜' },
+        { cover: 'linear-gradient(135deg,#fff8e1,#ffe082)', emoji: '🏺' },
+        { cover: 'linear-gradient(135deg,#e8f5e9,#a5d6a7)', emoji: '⚔️' },
+        { cover: 'linear-gradient(135deg,#f5e6ca,#f0d9a0)', emoji: '👘' },
+        { cover: 'linear-gradient(135deg,#fbe9e7,#ffccbc)', emoji: '🗺️' },
+        { cover: 'linear-gradient(135deg,#e3f2fd,#90caf9)', emoji: '🏯' },
+        { cover: 'linear-gradient(135deg,#f9fbe7,#e6ee9c)', emoji: '🌿' },
+      ],
+      mystery: [
+        { cover: 'linear-gradient(135deg,#4a6fa5,#2c3e6b)', emoji: '🔮' },
+        { cover: 'linear-gradient(135deg,#263238,#546e7a)', emoji: '🌑' },
+        { cover: 'linear-gradient(135deg,#1a237e,#4a148c)', emoji: '🔭' },
+        { cover: 'linear-gradient(135deg,#311b92,#6a1b9a)', emoji: '🕵️' },
+        { cover: 'linear-gradient(135deg,#212121,#424242)', emoji: '🗝️' },
+        { cover: 'linear-gradient(135deg,#1b5e20,#2e7d32)', emoji: '🌿' },
+        { cover: 'linear-gradient(135deg,#37474f,#78909c)', emoji: '🌫️' },
+        { cover: 'linear-gradient(135deg,#4a148c,#880e4f)', emoji: '🎭' },
+      ]
+    };
+
+    function getRandomTheme(cat) {
+      const themes = catThemes[cat] || catThemes.love;
+      return themes[Math.floor(Math.random() * themes.length)];
+    }
 
     // ============ TRANSLATIONS ============
     const translations = {
@@ -1454,23 +1492,24 @@
     // ============ TRANSLATION CACHE ============
     const translationCache = {};
 
-    async function translateParagraph(text, targetLang, retries = 2) {
-      for (let i = 0; i <= retries; i++) {
+    async function translateText(text, targetLang) {
+      if (!text.trim()) return text;
+      try {
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-TW&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        return data[0].map(chunk => chunk[0]).join('');
+      } catch(e) {
+        // 備用：嘗試 MyMemory
         try {
-          const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-TW&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
-          const res = await fetch(url);
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          const data = await res.json();
-          const result = data[0].map(chunk => chunk[0]).join('');
-          // 檢查翻譯結果是否有效（不是原文）
-          if (result && result.trim() && result !== text) return result;
-          return text; // 翻譯結果與原文相同，直接返回
-        } catch(e) {
-          if (i === retries) return text; // 重試完還失敗，返回原文
-          await new Promise(r => setTimeout(r, 500 * (i + 1))); // 等待後重試
-        }
+          const langPair = targetLang === 'en' ? 'zh-TW|en' : 'zh-TW|zh-CN';
+          const url2 = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}`;
+          const res2 = await fetch(url2);
+          const data2 = await res2.json();
+          return data2.responseData?.translatedText || text;
+        } catch(e2) { return text; }
       }
-      return text;
     }
 
     async function getTranslatedContent(story) {
@@ -1497,27 +1536,48 @@
       if (!targetLang) return story.content;
 
       try {
-        // 按段落分割，過濾空行
+        // 先按段落分，再把太長的段落切成 ≤150 字的小塊
         const paragraphs = story.content.split('\n\n');
+        const chunks = [];
+        const chunkIndex = []; // 記錄每個 chunk 屬於哪個段落
 
-        // 每次最多 5 段並行，避免請求太多被限流
-        const translated = [];
-        for (let i = 0; i < paragraphs.length; i += 5) {
-          const batch = paragraphs.slice(i, i + 5);
-          const results = await Promise.all(
-            batch.map(para => para.trim()
-              ? translateParagraph(para, targetLang)
-              : Promise.resolve(para)
-            )
-          );
-          translated.push(...results);
-          // 批次之間稍微等一下，避免被限流
-          if (i + 5 < paragraphs.length) await new Promise(r => setTimeout(r, 200));
+        paragraphs.forEach((para, pi) => {
+          if (!para.trim()) { chunks.push(''); chunkIndex.push(pi); return; }
+          if (para.length <= 150) {
+            chunks.push(para); chunkIndex.push(pi);
+          } else {
+            // 按句號、問號、驚嘆號切句
+            const sentences = para.split(/(?<=[。！？」…])/);
+            let buf = '';
+            sentences.forEach(s => {
+              if ((buf + s).length > 150 && buf) {
+                chunks.push(buf.trim()); chunkIndex.push(pi);
+                buf = s;
+              } else { buf += s; }
+            });
+            if (buf.trim()) { chunks.push(buf.trim()); chunkIndex.push(pi); }
+          }
+        });
+
+        // 每批 4 個 chunk 並行，批次間隔 300ms
+        const translated = new Array(chunks.length).fill('');
+        for (let i = 0; i < chunks.length; i += 4) {
+          const batch = chunks.slice(i, i + 4);
+          const results = await Promise.all(batch.map(c => c.trim() ? translateText(c, targetLang) : Promise.resolve(c)));
+          results.forEach((r, j) => { translated[i + j] = r; });
+          if (i + 4 < chunks.length) await new Promise(r => setTimeout(r, 300));
         }
 
-        const result = translated.join('\n\n');
-        translationCache[cacheKey] = result;
+        // 重新組合段落
+        const paraMap = {};
+        translated.forEach((t, i) => {
+          const pi = chunkIndex[i];
+          if (pi === undefined) return;
+          paraMap[pi] = (paraMap[pi] || '') + t;
+        });
+        const result = paragraphs.map((_, pi) => paraMap[pi] ?? '').join('\n\n');
 
+        translationCache[cacheKey] = result;
         if (isFirebaseStory) {
           db.collection('translations').doc(cacheKey)
             .set({ content: result, lang: currentLang, storyId })
@@ -1958,49 +2018,6 @@
       const content = document.getElementById('submitContent').value.trim();
       const cat = document.getElementById('submitCat').value;
       if (!title || !content) { showToast('請填寫完整資料', '#d4a5a5'); return; }
-
-      // 每個分類有多組封面和圖標，隨機挑選
-      const catThemes = {
-        love: [
-          { cover: 'linear-gradient(135deg,#f2d7d5,#e8c4c4)', emoji: '💌' },
-          { cover: 'linear-gradient(135deg,#f9c6d0,#f7a8b8)', emoji: '🌸' },
-          { cover: 'linear-gradient(135deg,#fde8e8,#f5c6c6)', emoji: '🌹' },
-          { cover: 'linear-gradient(135deg,#ffd6e7,#ffb3c6)', emoji: '💕' },
-          { cover: 'linear-gradient(135deg,#e8c4c4,#c5b3d9)', emoji: '🌙' },
-          { cover: 'linear-gradient(135deg,#fce4ec,#f48fb1)', emoji: '🎀' },
-          { cover: 'linear-gradient(135deg,#f3e5f5,#ce93d8)', emoji: '🌷' },
-          { cover: 'linear-gradient(135deg,#fff9c4,#ffe082)', emoji: '🌻' },
-          { cover: 'linear-gradient(135deg,#fce4ec,#e91e63,#c2185b)', emoji: '🫶' },
-          { cover: 'linear-gradient(135deg,#e0f7fa,#b2ebf2)', emoji: '🫧' },
-          { cover: 'linear-gradient(135deg,#f8bbd0,#e91e63)', emoji: '💝' },
-          { cover: 'linear-gradient(135deg,#fff3e0,#ffcc80)', emoji: '🍓' },
-        ],
-        history: [
-          { cover: 'linear-gradient(135deg,#f0d9a0,#d4a5a5)', emoji: '🏮' },
-          { cover: 'linear-gradient(135deg,#efebe9,#bcaaa4)', emoji: '📜' },
-          { cover: 'linear-gradient(135deg,#fff8e1,#ffe082)', emoji: '🏺' },
-          { cover: 'linear-gradient(135deg,#e8f5e9,#a5d6a7)', emoji: '⚔️' },
-          { cover: 'linear-gradient(135deg,#f5e6ca,#f0d9a0)', emoji: '👘' },
-          { cover: 'linear-gradient(135deg,#fbe9e7,#ffccbc)', emoji: '🗺️' },
-          { cover: 'linear-gradient(135deg,#e3f2fd,#90caf9)', emoji: '🏯' },
-          { cover: 'linear-gradient(135deg,#f9fbe7,#e6ee9c)', emoji: '🌿' },
-        ],
-        mystery: [
-          { cover: 'linear-gradient(135deg,#4a6fa5,#2c3e6b)', emoji: '🔮' },
-          { cover: 'linear-gradient(135deg,#263238,#546e7a)', emoji: '🌑' },
-          { cover: 'linear-gradient(135deg,#1a237e,#4a148c)', emoji: '🔭' },
-          { cover: 'linear-gradient(135deg,#311b92,#6a1b9a)', emoji: '🕵️' },
-          { cover: 'linear-gradient(135deg,#212121,#424242)', emoji: '🗝️' },
-          { cover: 'linear-gradient(135deg,#1b5e20,#2e7d32)', emoji: '🌿' },
-          { cover: 'linear-gradient(135deg,#37474f,#78909c)', emoji: '🌫️' },
-          { cover: 'linear-gradient(135deg,#4a148c,#880e4f)', emoji: '🎭' },
-        ]
-      };
-
-      function getRandomTheme(cat) {
-        const themes = catThemes[cat] || catThemes.love;
-        return themes[Math.floor(Math.random() * themes.length)];
-      }
 
       const theme = getRandomTheme(cat);
 
@@ -2712,14 +2729,34 @@
         const snap = await db.collection('stories').where('approved','==',true).orderBy('createdAt','desc').get();
         snap.forEach(doc => {
           const data = doc.data();
-          // avoid duplicates with built-in stories
           if (!stories.find(s => s.id === doc.id)) {
+            const cat = data.cat || 'love';
+            // 舊故事封面是預設值時，改用隨機主題
+            const defaultCovers = [
+              'linear-gradient(135deg,#f2d7d5,#e8c4c4)',
+              'linear-gradient(135deg,#f0d9a0,#d4a5a5)',
+              'linear-gradient(135deg,#4a6fa5,#2c3e6b)'
+            ];
+            const defaultEmojis = ['💌', '🏮', '🔮', '📖', '❤️'];
+            const needsNewTheme =
+              defaultCovers.includes(data.cover) ||
+              defaultEmojis.includes(data.emoji) ||
+              !data.cover || !data.emoji;
+
+            let cover = data.cover;
+            let emoji = data.emoji;
+            if (needsNewTheme) {
+              const theme = getRandomTheme(cat);
+              cover = theme.cover;
+              emoji = theme.emoji;
+            }
+
             stories.push({
               id: doc.id,
               title: data.title, titleEn: data.titleEn || data.title, titleCn: data.titleCn || data.title,
-              cat: data.cat || 'love',
-              cover: data.cover || 'linear-gradient(135deg,#e8c4c4,#c5b3d9)',
-              emoji: data.emoji || '📖',
+              cat,
+              cover,
+              emoji,
               views: data.views || 0,
               completions: data.completions || 0,
               favs: data.favs || 0,
