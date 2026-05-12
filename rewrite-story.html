@@ -4,6 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Rewrite Story</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#2c3e6b">
+  <meta name="description" content="每晚一個故事，溫柔入夢 — 睡前故事共讀平台">
+  <meta name="application-name" content="Rewrite Story">
+  <meta name="mobile-web-app-capable" content="yes">
+  <!-- iOS Safari PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Rewrite Story">
+  <link rel="apple-touch-icon" id="appleTouchIcon">
+  <!-- Manifest (injected by JS below) -->
+  <link rel="manifest" id="pwaManifest">
   <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
   <!-- Firebase SDK -->
@@ -98,7 +111,13 @@
     .sync-highlight { animation: syncPulse 0.6s ease-in-out; }
     @keyframes syncPulse { 0% { background: rgba(240,217,160,0.4); } 100% { background: transparent; } }
 
-    .story-text { font-size: 1.1em; line-height: 1.8; }
+    .story-text { font-size: 1.1em; line-height: 1.8; transition: font-size 0.2s ease; }
+    .story-text.fs-sm  { font-size: 0.95em; line-height: 1.7; }
+    .story-text.fs-md  { font-size: 1.1em;  line-height: 1.8; }
+    .story-text.fs-lg  { font-size: 1.25em; line-height: 1.9; }
+    .story-text.fs-xl  { font-size: 1.45em; line-height: 2.0; }
+    .fs-btn { transition: all 0.2s ease; }
+    .fs-btn.active { background: rgba(168,216,234,0.25); color: #a8d8ea; }
 
     .scroll-sync-indicator { position: fixed; top: 50%; right: 20px; width: 3px; height: 60px; background: rgba(168,216,234,0.3); border-radius: 2px; z-index: 100; animation: indicatorPulse 0.6s ease-in-out; }
     @keyframes indicatorPulse { 0% { background: rgba(168,216,234,0.8); } 100% { background: rgba(168,216,234,0.2); } }
@@ -178,6 +197,50 @@
 
     <!-- ===== ANNOUNCEMENT BANNER ===== -->
     <div id="announcementBanner" class="hidden"></div>
+
+    <!-- ===== EDIT STORY MODAL ===== -->
+    <div id="editStoryModal" style="position:fixed;inset:0;z-index:500;background:rgba(10,15,30,0.8);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:16px;">
+      <div style="background:linear-gradient(145deg,#1e2d52,#2c3e6b);border:1px solid rgba(168,216,234,0.2);border-radius:28px;padding:28px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,0.5);">
+        <div class="flex items-center justify-between mb-5">
+          <h3 class="text-lg font-bold text-cream-gold flex items-center gap-2"><span>✏️</span> 編輯故事</h3>
+          <button onclick="closeEditModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition">✕</button>
+        </div>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-xs text-white/50 mb-1.5">故事標題</label>
+            <input type="text" id="editTitle" maxlength="30"
+              class="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/30 focus:outline-none focus:border-cream-gold/50">
+          </div>
+          <div>
+            <label class="block text-xs text-white/50 mb-1.5">分類</label>
+            <select id="editCat" class="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-cream-gold/50">
+              <option value="love">💕 愛情</option>
+              <option value="history">📜 歷史</option>
+              <option value="mystery">🔮 懸疑</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-white/50 mb-1.5">作者筆名</label>
+            <input type="text" id="editPenName" maxlength="20"
+              class="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/30 focus:outline-none focus:border-cream-gold/50"
+              placeholder="留空則無筆名">
+          </div>
+          <div>
+            <div class="flex justify-between items-center mb-1.5">
+              <label class="text-xs text-white/50">故事內容</label>
+              <span id="editContentCount" class="text-xs text-white/30">0 字</span>
+            </div>
+            <textarea id="editContent" rows="10"
+              oninput="document.getElementById('editContentCount').textContent=this.value.length+'字'"
+              class="w-full bg-white/10 border border-white/15 rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/30 focus:outline-none focus:border-cream-gold/50 resize-none"></textarea>
+          </div>
+          <div class="flex gap-3 pt-1">
+            <button onclick="closeEditModal()" class="flex-1 py-2.5 rounded-xl bg-white/10 text-white/60 font-medium text-sm hover:bg-white/15 transition">取消</button>
+            <button onclick="saveEditStory()" class="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-morandi-pink to-dreamy-lavender text-starry-deep font-bold text-sm hover:opacity-90 transition">💾 儲存變更</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ===== ADMIN PASSWORD MODAL ===== -->
     <div id="adminModal">
@@ -396,6 +459,16 @@
               class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50">
           </div>
           <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-sm text-white/60">作者筆名</label>
+              <span id="penNameStatus" class="text-xs text-white/30"></span>
+            </div>
+            <input type="text" id="submitPenName" maxlength="20" placeholder="設定你的筆名（不可重複）..."
+              oninput="checkPenName()"
+              class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-cream-gold/50">
+            <p class="text-xs text-white/30 mt-1.5 ml-1">筆名會顯示在故事頁面，讀者可點擊查看你的所有作品</p>
+          </div>
+          <div>
             <label class="block text-sm text-white/60 mb-1">分類</label>
             <select id="submitCat" onchange="autoSaveDraft()" class="w-full bg-white/10 border border-white/15 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-cream-gold/50">
               <option value="love">💕 愛情</option>
@@ -474,18 +547,34 @@
             <button onclick="unpair()" class="text-xs text-white/25 hover:text-red-300 transition px-3 py-1.5 rounded-lg hover:bg-white/5">解除配對</button>
           </div>
 
+          <!-- 共讀統計 -->
+          <div id="coupleStats" class="grid grid-cols-3 gap-3 mb-5">
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-3 text-center">
+              <p class="text-2xl font-bold text-morandi-pink" id="statStoriesCount">0</p>
+              <p class="text-xs text-white/40 mt-0.5">共讀故事</p>
+            </div>
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-3 text-center">
+              <p class="text-2xl font-bold text-cream-gold" id="statNightsCount">0</p>
+              <p class="text-xs text-white/40 mt-0.5">故事夜晚</p>
+            </div>
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-3 text-center">
+              <p class="text-2xl font-bold text-dreamy-lavender" id="statSleepCount">0</p>
+              <p class="text-xs text-white/40 mt-0.5">甜甜睡著</p>
+            </div>
+          </div>
+
           <!-- 分頁 tabs -->
-          <div class="flex gap-2 mb-5">
+          <div class="flex gap-2 mb-5 overflow-x-auto pb-1">
             <button onclick="setCoupleTab('told')" id="tab-told"
-              class="flex-1 py-2 rounded-xl text-sm font-bold transition bg-morandi-pink/30 text-morandi-pink border border-morandi-pink/30">
-              📖 他講過的故事
+              class="flex-shrink-0 flex-1 py-2 rounded-xl text-sm font-bold transition bg-morandi-pink/30 text-morandi-pink border border-morandi-pink/30">
+              📖 他講過的
             </button>
             <button onclick="setCoupleTab('unfinished')" id="tab-unfinished"
-              class="flex-1 py-2 rounded-xl text-sm font-bold transition bg-white/5 text-white/50 border border-white/10">
-              😴 睡著沒聽完
+              class="flex-shrink-0 flex-1 py-2 rounded-xl text-sm font-bold transition bg-white/5 text-white/50 border border-white/10">
+              😴 睡著的
             </button>
             <button onclick="setCoupleTab('shared')" id="tab-shared"
-              class="flex-1 py-2 rounded-xl text-sm font-bold transition bg-white/5 text-white/50 border border-white/10">
+              class="flex-shrink-0 flex-1 py-2 rounded-xl text-sm font-bold transition bg-white/5 text-white/50 border border-white/10">
               💕 共同收藏
             </button>
           </div>
@@ -493,6 +582,16 @@
           <!-- 內容區 -->
           <div id="coupleContent" class="space-y-3"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- ===== AUTHOR PAGE ===== -->
+    <div class="page" id="page-author">
+      <div class="max-w-4xl mx-auto px-4 py-8">
+        <button onclick="navigateTo('home')" class="flex items-center gap-1 text-white/50 hover:text-white mb-6 text-sm transition">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i> 返回
+        </button>
+        <div id="authorContent"></div>
       </div>
     </div>
 
@@ -1525,8 +1624,16 @@
         try {
           const doc = await db.collection('translations').doc(cacheKey).get();
           if (doc.exists) {
-            translationCache[cacheKey] = doc.data().content;
-            return translationCache[cacheKey];
+            const cached = doc.data().content;
+            // 檢查快取是否有效：英文模式下不能有大量中文，簡中模式下必須有簡體字
+            const isValidTranslation = validateTranslation(cached, currentLang);
+            if (isValidTranslation) {
+              translationCache[cacheKey] = cached;
+              return cached;
+            } else {
+              // 壞掉的快取，刪除重譯
+              db.collection('translations').doc(cacheKey).delete().catch(() => {});
+            }
           }
         } catch(e) {}
       }
@@ -1536,20 +1643,20 @@
       if (!targetLang) return story.content;
 
       try {
-        // 先按段落分，再把太長的段落切成 ≤150 字的小塊
         const paragraphs = story.content.split('\n\n');
         const chunks = [];
-        const chunkIndex = []; // 記錄每個 chunk 屬於哪個段落
+        const chunkIndex = [];
 
         paragraphs.forEach((para, pi) => {
           if (!para.trim()) { chunks.push(''); chunkIndex.push(pi); return; }
           if (para.length <= 150) {
             chunks.push(para); chunkIndex.push(pi);
           } else {
-            // 按句號、問號、驚嘆號切句
-            const sentences = para.split(/(?<=[。！？」…])/);
+            // 按標點切句（相容所有瀏覽器，不用 lookbehind）
+            const parts = para.replace(/([。！？」…])/g, '$1|||').split('|||');
             let buf = '';
-            sentences.forEach(s => {
+            parts.forEach(s => {
+              if (!s) return;
               if ((buf + s).length > 150 && buf) {
                 chunks.push(buf.trim()); chunkIndex.push(pi);
                 buf = s;
@@ -1559,7 +1666,6 @@
           }
         });
 
-        // 每批 4 個 chunk 並行，批次間隔 300ms
         const translated = new Array(chunks.length).fill('');
         for (let i = 0; i < chunks.length; i += 4) {
           const batch = chunks.slice(i, i + 4);
@@ -1568,7 +1674,6 @@
           if (i + 4 < chunks.length) await new Promise(r => setTimeout(r, 300));
         }
 
-        // 重新組合段落
         const paraMap = {};
         translated.forEach((t, i) => {
           const pi = chunkIndex[i];
@@ -1577,17 +1682,37 @@
         });
         const result = paragraphs.map((_, pi) => paraMap[pi] ?? '').join('\n\n');
 
-        translationCache[cacheKey] = result;
-        if (isFirebaseStory) {
-          db.collection('translations').doc(cacheKey)
-            .set({ content: result, lang: currentLang, storyId })
-            .catch(() => {});
+        // 驗證翻譯結果再儲存
+        if (validateTranslation(result, currentLang)) {
+          translationCache[cacheKey] = result;
+          if (isFirebaseStory) {
+            db.collection('translations').doc(cacheKey)
+              .set({ content: result, lang: currentLang, storyId })
+              .catch(() => {});
+          }
+          return result;
         }
-        return result;
+        return story.content; // 翻譯失敗，返回原文
       } catch(e) {
         console.error('翻譯失敗:', e);
         return story.content;
       }
+    }
+
+    function validateTranslation(text, lang) {
+      if (!text || text.length < 10) return false;
+      // 計算中文字比例
+      const chineseChars = (text.match(/[\u4e00-\u9fff]/g) || []).length;
+      const totalChars = text.replace(/\s/g, '').length;
+      const chineseRatio = chineseChars / totalChars;
+      if (lang === 'en') {
+        // 英文翻譯：中文比例應低於 15%
+        return chineseRatio < 0.15;
+      } else if (lang === 'zh-CN') {
+        // 簡中翻譯：應有中文，且有簡體特有字（或比例正常）
+        return chineseRatio > 0.2;
+      }
+      return true;
     }
 
     // ============ STORY DETAIL ============
@@ -1614,10 +1739,20 @@
             <div class="watermark" style="font-size:14px">Rewrite Story</div>
           </div>
           <h1 class="text-3xl font-bold mb-2" style="font-family:'Quicksand',sans-serif">${getTitle()} ${typeof s.id === 'number' ? `<span class="text-base font-normal text-starry-glow bg-starry-glow/20 px-2 py-0.5 rounded-full align-middle" style="font-size:0.7em">${t('demo_badge')}</span>` : ''}</h1>
-          <div class="flex items-center gap-4 text-sm text-white/50 mb-4">
+          ${s.penName ? `<div class="mb-3"><button onclick="openAuthorPage('${s.penName.replace(/'/g,"\\'")}');event.stopPropagation()" class="text-sm text-morandi-pink hover:text-morandi-rose transition flex items-center gap-1.5"><span>✍️</span><span>${s.penName}</span><span class="text-white/30 text-xs">的作品</span></button></div>` : ''}
+          <div class="flex items-center gap-4 text-sm text-white/50 mb-3">
             <span>👁️ ${s.views.toLocaleString()} ${t('views')}</span>
             <span>✅ ${s.completions} ${t('completions')}</span>
             <span>❤️ ${s.favs} ${t('favorites_label')}</span>
+            ${s.avgRating ? `<span>⭐ ${s.avgRating.toFixed(1)} (${s.ratingCount||0}人)</span>` : ''}
+          </div>
+          <!-- 星星評分 -->
+          <div class="flex items-center gap-2 mb-4" id="ratingArea">
+            <span class="text-xs text-white/40">為這個故事評分：</span>
+            <div class="flex gap-1" id="starRating">
+              ${[1,2,3,4,5].map(n => `<button onclick="submitRating('${s.id}',${n})" onmouseover="hoverStar(${n})" onmouseout="unhoverStar('${s.id}')" class="star-btn text-2xl transition hover:scale-110" data-star="${n}">☆</button>`).join('')}
+            </div>
+            <span class="text-xs text-white/30" id="myRatingText"></span>
           </div>
           ${progress > 0 ? `<div class="mb-4"><span class="text-xs text-white/40">${t('reading_progress')}: ${progress}%</span><div class="h-2 bg-white/10 rounded-full mt-1"><div class="progress-fill h-full bg-gradient-to-r from-cream-gold to-morandi-pink rounded-full" style="width:${progress}%"></div></div></div>` : ''}
           <div class="flex gap-3 mb-8">
@@ -1630,6 +1765,16 @@
             <button onclick="addToCoupleShelf('${s.id}')" class="px-4 py-3 rounded-2xl bg-white/5 text-white/50 hover:bg-morandi-pink/20 hover:text-morandi-pink transition" title="加入情侶書架">
               💑
             </button>
+          </div>
+          <!-- 字體大小工具列 -->
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs text-white/30 flex items-center gap-1">📖 字體大小</span>
+            <div class="flex items-center gap-1 bg-white/5 rounded-xl p-1">
+              <button onclick="setFontSize('sm')" id="fsBtn-sm" class="fs-btn px-3 py-1.5 rounded-lg text-xs text-white/40 hover:text-white hover:bg-white/10 transition font-medium">小</button>
+              <button onclick="setFontSize('md')" id="fsBtn-md" class="fs-btn px-3 py-1.5 rounded-lg text-xs text-white/40 hover:text-white hover:bg-white/10 transition font-medium">中</button>
+              <button onclick="setFontSize('lg')" id="fsBtn-lg" class="fs-btn px-3 py-1.5 rounded-lg text-xs text-white/40 hover:text-white hover:bg-white/10 transition font-medium">大</button>
+              <button onclick="setFontSize('xl')" id="fsBtn-xl" class="fs-btn px-3 py-1.5 rounded-lg text-xs text-white/40 hover:text-white hover:bg-white/10 transition font-medium">特大</button>
+            </div>
           </div>
           <div class="bg-white/5 rounded-3xl p-6 border border-white/10 leading-relaxed text-white/80 text-base story-text" id="storyText">
             ${currentLang !== 'zh-TW' ? `
@@ -1669,6 +1814,8 @@
         </div>`;
       navigateTo('detail');
       lucide.createIcons();
+      initStarRating(s.id);
+      applyFontSize();
 
       // 非繁中語言 → 非同步翻譯內文
       if (currentLang !== 'zh-TW') {
@@ -1876,6 +2023,29 @@
       }
     }
 
+    // ============ FONT SIZE ============
+    let currentFontSize = localStorage.getItem('rs_font_size') || 'md';
+
+    function setFontSize(size) {
+      currentFontSize = size;
+      localStorage.setItem('rs_font_size', size);
+      applyFontSize();
+    }
+
+    function applyFontSize() {
+      const el = document.getElementById('storyText');
+      if (!el) return;
+      el.className = el.className
+        .replace(/\bfs-sm\b|\bfs-md\b|\bfs-lg\b|\bfs-xl\b/g, '')
+        .trim() + ` fs-${currentFontSize}`;
+
+      // 更新按鈕高亮
+      ['sm','md','lg','xl'].forEach(s => {
+        const btn = document.getElementById(`fsBtn-${s}`);
+        if (btn) btn.className = `fs-btn px-3 py-1.5 rounded-lg text-xs transition font-medium ${s === currentFontSize ? 'active' : 'text-white/40 hover:text-white hover:bg-white/10'}`;
+      });
+    }
+
     function startReading(id) {
       const el = document.getElementById('storyText');
       if (el) {
@@ -2017,7 +2187,16 @@
       const title = document.getElementById('submitTitle').value.trim();
       const content = document.getElementById('submitContent').value.trim();
       const cat = document.getElementById('submitCat').value;
+      const penName = document.getElementById('submitPenName').value.trim();
       if (!title || !content) { showToast('請填寫完整資料', '#d4a5a5'); return; }
+
+      // 筆名唯一性檢查
+      if (penName) {
+        const snap = await db.collection('penNames').doc(penName).get();
+        if (snap.exists && snap.data().uid !== currentUser?.uid) {
+          showToast('此筆名已被使用，請換一個', '#d4a5a5'); return;
+        }
+      }
 
       const theme = getRandomTheme(cat);
 
@@ -2027,15 +2206,28 @@
           content, cat,
           cover: theme.cover,
           emoji: theme.emoji,
+          penName: penName || '',
+          authorUid: currentUser?.uid || '',
           views: 0, completions: 0, favs: 0,
+          avgRating: 0, ratingCount: 0,
           days: 0, approved: false,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
-        // 投稿成功 → 清除草稿
+
+        // 註冊筆名（唯一）
+        if (penName && currentUser) {
+          await db.collection('penNames').doc(penName).set({
+            uid: currentUser.uid, penName,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        }
+
         localStorage.removeItem('rs_draft');
         showToast(t('toast_submit'), '#b8e0d2');
         document.getElementById('submitTitle').value = '';
         document.getElementById('submitContent').value = '';
+        document.getElementById('submitPenName').value = '';
+        document.getElementById('penNameStatus').textContent = '';
         document.getElementById('draftBanner')?.classList.add('hidden');
         updateTitleCount(); updateContentCount();
       } catch(e) {
@@ -2146,19 +2338,22 @@
           const s = { id: doc.id, ...doc.data() };
           const ts = s.createdAt?.toDate ? s.createdAt.toDate().toLocaleDateString('zh-TW') : '未知';
           return `
-            <div class="fade-up bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-3">
-              <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:${s.cover||'linear-gradient(135deg,#e8c4c4,#c5b3d9)'}">${s.emoji||'📖'}</div>
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <h3 class="font-bold text-sm text-white truncate">${s.title}</h3>
-                  <span class="text-xs bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded-full flex-shrink-0">✅ 上架中</span>
-                  <span class="text-xs bg-white/10 text-white/40 px-1.5 py-0.5 rounded-full flex-shrink-0">${s.cat==='love'?'💕 愛情':s.cat==='history'?'📜 歷史':'🔮 懸疑'}</span>
+            <div class="fade-up bg-white/5 border border-white/10 rounded-2xl p-4" id="pub-${s.id}">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:${s.cover||'linear-gradient(135deg,#e8c4c4,#c5b3d9)'}">${s.emoji||'📖'}</div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="font-bold text-sm text-white truncate">${s.title}</h3>
+                    <span class="text-xs bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded-full flex-shrink-0">✅ 上架中</span>
+                    <span class="text-xs bg-white/10 text-white/40 px-1.5 py-0.5 rounded-full flex-shrink-0">${s.cat==='love'?'💕 愛情':s.cat==='history'?'📜 歷史':'🔮 懸疑'}</span>
+                  </div>
+                  <p class="text-xs text-white/30 mt-1">上架日期：${ts} · 👁 ${s.views||0} 閱讀 · ⭐ ${s.avgRating||0}</p>
                 </div>
-                <p class="text-xs text-white/30 mt-1">上架日期：${ts} · 👁 ${s.views||0} 閱讀</p>
-              </div>
-              <div class="flex gap-2 flex-shrink-0">
-                <button onclick="unpublishStory('${s.id}')" class="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 text-xs hover:bg-amber-500/30 transition font-medium">📦 下架</button>
-                <button onclick="deletePublishedStory('${s.id}')" class="px-3 py-1.5 rounded-xl bg-red-500/20 text-red-300 text-xs hover:bg-red-500/30 transition font-medium">🗑️ 刪除</button>
+                <div class="flex gap-2 flex-shrink-0">
+                  <button onclick="openEditModal('${s.id}','${(s.title||'').replace(/'/g,"\\'")}','${s.cat||'love'}',\`${(s.content||'').replace(/`/g,'\\`')}\`,'${s.penName||''}')" class="px-3 py-1.5 rounded-xl bg-starry-glow/20 text-starry-glow text-xs hover:bg-starry-glow/30 transition font-medium">✏️ 編輯</button>
+                  <button onclick="unpublishStory('${s.id}')" class="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 text-xs hover:bg-amber-500/30 transition font-medium">📦 下架</button>
+                  <button onclick="deletePublishedStory('${s.id}')" class="px-3 py-1.5 rounded-xl bg-red-500/20 text-red-300 text-xs hover:bg-red-500/30 transition font-medium">🗑️ 刪除</button>
+                </div>
               </div>
             </div>`;
         });
@@ -2373,6 +2568,136 @@
       if (notifPanelOpen && !panel.contains(e.target) && !bell.contains(e.target)) closeNotifPanel();
     });
 
+    // ============ STAR RATING ============
+    const myRatings = JSON.parse(localStorage.getItem('rs_ratings') || '{}');
+
+    function hoverStar(n) {
+      document.querySelectorAll('.star-btn').forEach(btn => {
+        btn.textContent = parseInt(btn.dataset.star) <= n ? '⭐' : '☆';
+      });
+    }
+
+    function unhoverStar(storyId) {
+      const my = myRatings[String(storyId)] || 0;
+      document.querySelectorAll('.star-btn').forEach(btn => {
+        btn.textContent = parseInt(btn.dataset.star) <= my ? '⭐' : '☆';
+      });
+    }
+
+    async function submitRating(storyId, score) {
+      const sid = String(storyId);
+      myRatings[sid] = score;
+      localStorage.setItem('rs_ratings', JSON.stringify(myRatings));
+
+      // Update star display
+      document.querySelectorAll('.star-btn').forEach(btn => {
+        btn.textContent = parseInt(btn.dataset.star) <= score ? '⭐' : '☆';
+      });
+      const ratingText = document.getElementById('myRatingText');
+      if (ratingText) ratingText.textContent = `你給了 ${score} 顆星`;
+
+      // Save to Firebase (only for Firebase stories)
+      if (!sid.match(/^\d+$/)) {
+        try {
+          const uid = currentUser?.uid || 'anon';
+          await db.collection('ratings').doc(`${sid}_${uid}`).set({
+            storyId: sid, uid, score,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          // Recalculate average
+          const snap = await db.collection('ratings').where('storyId', '==', sid).get();
+          const scores = snap.docs.map(d => d.data().score);
+          const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+          await db.collection('stories').doc(sid).update({
+            avgRating: Math.round(avg * 10) / 10,
+            ratingCount: scores.length
+          });
+          // Update local story
+          const st = stories.find(s => s.id === sid);
+          if (st) { st.avgRating = Math.round(avg * 10) / 10; st.ratingCount = scores.length; }
+          showToast(`評了 ${'⭐'.repeat(score)} 謝謝你的評分！`, '#f0d9a0');
+        } catch(e) { console.error(e); }
+      } else {
+        showToast(`評了 ${'⭐'.repeat(score)}`, '#f0d9a0');
+      }
+    }
+
+    function initStarRating(storyId) {
+      const my = myRatings[String(storyId)] || 0;
+      document.querySelectorAll('.star-btn').forEach(btn => {
+        btn.textContent = parseInt(btn.dataset.star) <= my ? '⭐' : '☆';
+      });
+      const ratingText = document.getElementById('myRatingText');
+      if (ratingText && my > 0) ratingText.textContent = `你給了 ${my} 顆星`;
+    }
+
+    // ============ AUTHOR PAGE ============
+    let penNameCheckTimer = null;
+
+    async function checkPenName() {
+      const val = document.getElementById('submitPenName').value.trim();
+      const statusEl = document.getElementById('penNameStatus');
+      if (!val) { statusEl.textContent = ''; return; }
+      statusEl.textContent = '檢查中...';
+      statusEl.className = 'text-xs text-white/30';
+      clearTimeout(penNameCheckTimer);
+      penNameCheckTimer = setTimeout(async () => {
+        try {
+          const snap = await db.collection('penNames').doc(val).get();
+          const myUid = currentUser?.uid;
+          if (snap.exists && snap.data().uid !== myUid) {
+            statusEl.textContent = '❌ 此筆名已被使用';
+            statusEl.className = 'text-xs text-red-400';
+          } else {
+            statusEl.textContent = '✓ 可以使用';
+            statusEl.className = 'text-xs text-green-400';
+          }
+        } catch(e) { statusEl.textContent = ''; }
+      }, 600);
+    }
+
+    async function openAuthorPage(penName) {
+      if (!penName) return;
+      navigateTo('author');
+      const content = document.getElementById('authorContent');
+      content.innerHTML = `<div class="text-center py-12 text-white/40 text-sm">載入中...</div>`;
+      try {
+        const snap = await db.collection('stories')
+          .where('penName', '==', penName)
+          .where('approved', '==', true)
+          .get();
+        const authorStories = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        // Also check local stories array
+        const localAuthorStories = stories.filter(s => s.penName === penName && s.approved && typeof s.id === 'number');
+        const all = [...localAuthorStories, ...authorStories];
+
+        content.innerHTML = `
+          <div class="fade-up">
+            <div class="flex items-center gap-4 mb-8 bg-white/5 border border-white/10 rounded-3xl p-6">
+              <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-morandi-pink to-dreamy-lavender flex items-center justify-center text-3xl">✍️</div>
+              <div>
+                <h2 class="text-2xl font-bold text-white" style="font-family:'Quicksand',sans-serif">${penName}</h2>
+                <p class="text-sm text-white/40 mt-1">共 ${all.length} 篇作品</p>
+              </div>
+            </div>
+            <h3 class="text-lg font-bold text-cream-gold mb-4">全部作品</h3>
+            ${all.length === 0
+              ? `<div class="text-center py-12 text-white/30">還沒有已上架的作品</div>`
+              : `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+                  ${all.map((s, i) => {
+                    const st = { ...s, approved: true };
+                    if (!stories.find(x => String(x.id) === String(s.id))) stories.push(st);
+                    return createBookCard(st, i * 60);
+                  }).join('')}
+                </div>`}
+          </div>`;
+        lucide.createIcons();
+      } catch(e) {
+        console.error(e);
+        content.innerHTML = `<div class="text-center py-12 text-red-400 text-sm">載入失敗</div>`;
+      }
+    }
+
     // ============ COUPLE SHELF ============
     let myPairId = null;      // 我的配對房間 ID
     let coupleData = null;    // Firebase 配對資料
@@ -2460,6 +2785,17 @@
       if (!coupleData) return;
       const content = document.getElementById('coupleContent');
       const allStories = coupleData.stories || [];
+
+      // Update stats
+      const toldCount = allStories.filter(s => s.toldDate).length;
+      const sleepCount = allStories.filter(s => s.fellAsleep).length;
+      const el1 = document.getElementById('statStoriesCount');
+      const el2 = document.getElementById('statNightsCount');
+      const el3 = document.getElementById('statSleepCount');
+      if (el1) el1.textContent = toldCount;
+      if (el2) el2.textContent = allStories.length;
+      if (el3) el3.textContent = sleepCount;
+
       let filtered = [];
       if (currentCoupleTab === 'told') filtered = allStories.filter(s => s.toldDate);
       else if (currentCoupleTab === 'unfinished') filtered = allStories.filter(s => s.fellAsleep);
@@ -2481,17 +2817,30 @@
         const emoji = story?.emoji || '📖';
         const cover = story?.cover || 'linear-gradient(135deg,#e8c4c4,#c5b3d9)';
         return `
-          <div class="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:bg-white/8 transition" onclick="openStory('${cs.storyId}')">
-            <div class="w-14 h-14 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style="background:${cover}">${emoji}</div>
-            <div class="flex-1 min-w-0">
-              <h3 class="font-bold text-white text-sm truncate">${title}</h3>
-              ${cs.toldDate ? `<p class="text-xs text-morandi-pink mt-0.5">💬 他在 ${cs.toldDate} 講給你聽</p>` : ''}
-              ${cs.fellAsleep ? `<p class="text-xs text-dreamy-lavender mt-0.5">😴 你睡著了，還沒看完結局</p>` : ''}
-              ${cs.note ? `<p class="text-xs text-white/40 mt-0.5 italic">"${cs.note}"</p>` : ''}
+          <div class="bg-white/5 border border-white/10 rounded-2xl p-4 gap-3" id="cstory-${cs.storyId}">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="openStory('${cs.storyId}')">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0" style="background:${cover}">${emoji}</div>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-bold text-white text-sm truncate">${title}</h3>
+                ${cs.toldDate ? `<p class="text-xs text-morandi-pink mt-0.5">💬 ${cs.toldDate} 講給你聽</p>` : ''}
+                ${cs.fellAsleep ? `<p class="text-xs text-dreamy-lavender mt-0.5">😴 你睡著沒聽完結局</p>` : ''}
+              </div>
+              <div class="flex flex-col gap-1.5 flex-shrink-0">
+                ${!cs.toldDate ? `<button onclick="event.stopPropagation();markAsTold('${cs.storyId}')" class="px-3 py-1.5 rounded-xl bg-morandi-pink/20 text-morandi-pink text-xs font-medium hover:bg-morandi-pink/30 transition">✅ 講完了</button>` : ''}
+                ${!cs.fellAsleep ? `<button onclick="event.stopPropagation();markFellAsleep('${cs.storyId}')" class="px-3 py-1.5 rounded-xl bg-dreamy-lavender/20 text-dreamy-lavender text-xs font-medium hover:bg-dreamy-lavender/30 transition">😴 睡著了</button>` : `<button onclick="event.stopPropagation();unmarkFellAsleep('${cs.storyId}')" class="px-3 py-1.5 rounded-xl bg-white/10 text-white/30 text-xs hover:bg-white/15 transition">👁️ 看完了</button>`}
+              </div>
             </div>
-            <div class="flex flex-col gap-1.5 flex-shrink-0">
-              ${!cs.toldDate ? `<button onclick="event.stopPropagation();markAsTold('${cs.storyId}')" class="px-3 py-1.5 rounded-xl bg-morandi-pink/20 text-morandi-pink text-xs font-medium hover:bg-morandi-pink/30 transition">✅ 講完了</button>` : ''}
-              ${!cs.fellAsleep ? `<button onclick="event.stopPropagation();markFellAsleep('${cs.storyId}')" class="px-3 py-1.5 rounded-xl bg-dreamy-lavender/20 text-dreamy-lavender text-xs font-medium hover:bg-dreamy-lavender/30 transition">😴 睡著了</button>` : `<button onclick="event.stopPropagation();unmarkFellAsleep('${cs.storyId}')" class="px-3 py-1.5 rounded-xl bg-white/10 text-white/30 text-xs hover:bg-white/15 transition">👁️ 看完了</button>`}
+            <!-- 備忘錄 -->
+            <div class="mt-3 pt-3 border-t border-white/5">
+              ${cs.note
+                ? `<div class="flex items-start gap-2">
+                    <p class="flex-1 text-xs text-white/50 italic leading-relaxed">"${cs.note}"</p>
+                    <button onclick="editCoupleNote('${cs.storyId}','${cs.note.replace(/'/g,"\\'")}','${title.replace(/'/g,"\\'")}' )" class="text-xs text-white/25 hover:text-white/50 transition flex-shrink-0">✏️</button>
+                    <button onclick="editCoupleNote('${cs.storyId}','','${title.replace(/'/g,"\\'")}' )" class="text-xs text-white/25 hover:text-red-300 transition flex-shrink-0">🗑️</button>
+                  </div>`
+                : `<button onclick="editCoupleNote('${cs.storyId}','','${title.replace(/'/g,"\\'")}' )" class="text-xs text-white/30 hover:text-morandi-pink transition flex items-center gap-1">
+                    <span>📝</span> 留下關於這個故事的備忘
+                  </button>`}
             </div>
           </div>`;
       }).join('');
@@ -2559,6 +2908,21 @@
       } catch(e) { showToast('操作失敗', '#d4a5a5'); }
     }
 
+    async function editCoupleNote(storyId, currentNote, title) {
+      const note = prompt(`為「${title}」留下備忘：\n（留空則刪除備忘）`, currentNote || '');
+      if (note === null) return; // 取消
+      if (!myPairId) return;
+      try {
+        const doc = await db.collection('couples').doc(myPairId).get();
+        const stories_list = doc.data().stories || [];
+        const updated = stories_list.map(s =>
+          String(s.storyId) === String(storyId) ? { ...s, note: note.trim() } : s
+        );
+        await db.collection('couples').doc(myPairId).update({ stories: updated });
+        showToast(note.trim() ? '備忘已儲存 📝' : '備忘已刪除', '#b8e0d2');
+      } catch(e) { showToast('儲存失敗', '#d4a5a5'); }
+    }
+
     function copyPairCode() {
       navigator.clipboard.writeText(myPairId || '').then(() => showToast('配對碼已複製 💌', '#e8c4c4'));
     }
@@ -2580,6 +2944,63 @@
       if (savedPairId) {
         myPairId = savedPairId;
         enterCoupleShelf(savedPairId);
+      }
+    }
+
+    // ============ EDIT STORY MODAL ============
+    let editingStoryId = null;
+
+    function openEditModal(id, title, cat, content, penName) {
+      editingStoryId = id;
+      document.getElementById('editTitle').value = title;
+      document.getElementById('editCat').value = cat;
+      document.getElementById('editContent').value = content;
+      document.getElementById('editPenName').value = penName || '';
+      document.getElementById('editContentCount').textContent = content.length + ' 字';
+      const modal = document.getElementById('editStoryModal');
+      modal.style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('editStoryModal').style.display = 'none';
+      editingStoryId = null;
+    }
+
+    async function saveEditStory() {
+      if (!editingStoryId) return;
+      const title = document.getElementById('editTitle').value.trim();
+      const cat = document.getElementById('editCat').value;
+      const content = document.getElementById('editContent').value.trim();
+      const penName = document.getElementById('editPenName').value.trim();
+      if (!title || !content) { showToast('標題和內容不能為空', '#d4a5a5'); return; }
+
+      try {
+        await db.collection('stories').doc(editingStoryId).update({
+          title, titleEn: title, titleCn: title,
+          cat, content, penName: penName || '',
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        // 清除翻譯快取
+        ['en','zh-CN'].forEach(lang => {
+          const key = `${editingStoryId}_${lang}`;
+          delete translationCache[key];
+          db.collection('translations').doc(key).delete().catch(() => {});
+        });
+
+        // 更新本地陣列
+        const idx = stories.findIndex(s => String(s.id) === editingStoryId);
+        if (idx > -1) {
+          stories[idx] = { ...stories[idx], title, titleEn: title, titleCn: title, cat, content, penName };
+        }
+
+        closeEditModal();
+        showToast('故事已更新 ✅', '#b8e0d2');
+        loadPublishedStories();
+        renderHome();
+      } catch(e) {
+        console.error(e);
+        showToast('儲存失敗，請稍後再試', '#d4a5a5');
       }
     }
 
@@ -2757,6 +3178,10 @@
               cat,
               cover,
               emoji,
+              penName: data.penName || '',
+              authorUid: data.authorUid || '',
+              avgRating: data.avgRating || 0,
+              ratingCount: data.ratingCount || 0,
               views: data.views || 0,
               completions: data.completions || 0,
               favs: data.favs || 0,
@@ -2803,6 +3228,90 @@
           renderNotifAdminList();
         }, err => console.error('通知監聽失敗:', err));
     }
+
+    // ============ PWA SETUP ============
+    (function initPWA() {
+      // 1. 用 SVG 產生 App Icon（星空 RS 圖示）
+      const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+        <defs>
+          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#2c3e6b"/>
+            <stop offset="100%" style="stop-color:#1e2d52"/>
+          </linearGradient>
+          <linearGradient id="text" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#f0d9a0"/>
+            <stop offset="100%" style="stop-color:#e8c4c4"/>
+          </linearGradient>
+        </defs>
+        <rect width="512" height="512" rx="110" fill="url(#bg)"/>
+        <circle cx="80" cy="80" r="6" fill="#fff" opacity="0.6"/>
+        <circle cx="420" cy="60" r="4" fill="#fff" opacity="0.5"/>
+        <circle cx="450" cy="180" r="3" fill="#fff" opacity="0.4"/>
+        <circle cx="60" cy="350" r="5" fill="#fff" opacity="0.5"/>
+        <circle cx="380" cy="420" r="4" fill="#fff" opacity="0.4"/>
+        <circle cx="150" cy="430" r="3" fill="#fff" opacity="0.3"/>
+        <circle cx="320" cy="90" r="3" fill="#fff" opacity="0.5"/>
+        <circle cx="100" cy="200" r="4" fill="#f0d9a0" opacity="0.6"/>
+        <text x="256" y="300" text-anchor="middle" font-family="Georgia,serif" font-size="200" font-weight="bold" fill="url(#text)">RS</text>
+        <text x="256" y="400" text-anchor="middle" font-family="Arial,sans-serif" font-size="42" fill="#a8d8ea" opacity="0.8" letter-spacing="3">REWRITE</text>
+      </svg>`;
+      const iconUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(iconSvg)));
+
+      // 設定 Apple Touch Icon
+      document.getElementById('appleTouchIcon').href = iconUrl;
+
+      // 2. 注入 Manifest
+      const manifest = {
+        name: 'Rewrite Story',
+        short_name: 'RS 故事',
+        description: '每晚一個故事，溫柔入夢',
+        start_url: './',
+        display: 'standalone',
+        background_color: '#1e2d52',
+        theme_color: '#2c3e6b',
+        orientation: 'portrait-primary',
+        lang: 'zh-TW',
+        icons: [
+          { src: iconUrl, sizes: '192x192', type: 'image/svg+xml', purpose: 'any maskable' },
+          { src: iconUrl, sizes: '512x512', type: 'image/svg+xml', purpose: 'any maskable' }
+        ]
+      };
+      const manifestBlob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+      document.getElementById('pwaManifest').href = URL.createObjectURL(manifestBlob);
+
+      // 3. 註冊 Service Worker（離線快取）
+      if ('serviceWorker' in navigator) {
+        const swCode = `
+          const CACHE = 'rs-cache-v1';
+          const URLS = ['./', './rewrite-story.html'];
+          self.addEventListener('install', e => {
+            e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS).catch(() => {})));
+            self.skipWaiting();
+          });
+          self.addEventListener('activate', e => {
+            e.waitUntil(caches.keys().then(keys =>
+              Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+            ));
+            self.clients.claim();
+          });
+          self.addEventListener('fetch', e => {
+            if (e.request.method !== 'GET') return;
+            e.respondWith(
+              fetch(e.request).then(res => {
+                const clone = res.clone();
+                caches.open(CACHE).then(c => c.put(e.request, clone));
+                return res;
+              }).catch(() => caches.match(e.request))
+            );
+          });
+        `;
+        const swBlob = new Blob([swCode], { type: 'application/javascript' });
+        const swUrl = URL.createObjectURL(swBlob);
+        navigator.serviceWorker.register(swUrl)
+          .then(() => console.log('SW registered'))
+          .catch(e => console.log('SW:', e.message));
+      }
+    })();
 
     // ============ INIT ============
     createStars();
